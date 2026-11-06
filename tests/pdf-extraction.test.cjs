@@ -33,7 +33,6 @@ function fakePdfJs(pages, options = {}) {
         cleanup() { state.cleanedPages += 1 },
       }
     },
-    async destroy() { state.destroyed += 1 },
   }
   return {
     state,

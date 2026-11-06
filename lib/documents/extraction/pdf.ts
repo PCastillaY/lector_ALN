@@ -13,7 +13,6 @@ interface PdfPage {
 interface PdfDocument {
   numPages: number
   getPage(pageNumber: number): Promise<PdfPage>
-  destroy(): Promise<void>
 }
 
 interface PdfLoadingTask {
@@ -85,10 +84,8 @@ export async function extractPdfDocument(
   }
 
   const loadingTask = pdfjs.getDocument({ data: bytes })
-  let pdf: PdfDocument | null = null
-
   try {
-    pdf = await loadingTask.promise
+    const pdf = await loadingTask.promise
     if (!Number.isInteger(pdf.numPages) || pdf.numPages < 1) {
       throw new Error("El PDF no contiene páginas.")
     }
@@ -134,10 +131,8 @@ export async function extractPdfDocument(
     }
     throw friendlyPdfError(error)
   } finally {
-    if (pdf) {
-      await pdf.destroy()
-    } else {
-      await loadingTask.destroy()
-    }
+    // PDFDocumentLoadingTask owns the worker lifecycle. PDFDocumentProxy
+    // does not expose destroy() in the PDF.js API used by this application.
+    await loadingTask.destroy()
   }
 }
