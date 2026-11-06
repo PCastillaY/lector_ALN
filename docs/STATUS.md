@@ -1,10 +1,10 @@
 # Lector ALN — estado del proyecto
 
 > **Última actualización:** 2026-11-06  
-> **Rama base vigente:** `main`  
+> **Rama de trabajo vigente:** `feat/text-segmentation` (basada en `main`)  
 > **Último PR integrado:** PR #5 — extracción EPUB local (Squash and merge).  
 > **Commit de PR #5:** `b29cfc4f769ab66921adefb6fe458605d396efaf`  
-> **Siguiente fase aprobada:** segmentación de texto, antes de implementar TTS.  
+> **Fase en curso:** segmentación de texto, antes de implementar TTS.  
 > **Criterio rector:** buscar excelencia verificable; no confundir una demo funcional con un producto terminado.
 
 Este documento es el registro operativo del proyecto. La sección «Estado vigente» prevalece sobre los registros históricos posteriores, que conservan el contexto de cada fase y pueden contener decisiones ya superadas.
@@ -31,16 +31,18 @@ La ruta **importar → extraer → leer** está implementada para los tres forma
 - **Arquitectura:** mantener extracción específica por formato y normalización común mediante `DocumentContent`.
 - **Privacidad:** conservar el enfoque local-first; no enviar documentos a servicios externos como parte de la extracción.
 
-### Próxima fase aprobada: segmentación de texto
+### Fase en curso: segmentación de texto
 
-Crear la rama `feat/text-segmentation` desde `main`. El objetivo es implementar una capa independiente que transforme el contenido normalizado en segmentos adecuados para narración futura, sin integrar todavía un motor TTS.
+La rama `feat/text-segmentation` se creó desde el último commit de `main`. El objetivo es implementar una capa independiente que transforme el contenido normalizado en segmentos adecuados para narración futura, sin integrar todavía un motor TTS.
+
+**Implementación inicial en la rama:** contrato `TextSegment`, segmentador por bloques/oraciones, referencias a sección y bloque, orden global y partición por longitud preferida. La salida conserva cada fragmento como un slice exacto del bloque original. Los offsets se calculan sumando el índice UTF-16 local al offset inicial del bloque; no se presupone que TXT, PDF y EPUB compartan una única cadena fuente global. La implementación y sus pruebas aún deben superar typecheck, suite completa, build y revisión de casos límite.
 
 Alcance propuesto para esa fase:
 
-- [ ] Definir el contrato `TextSegment` y sus identificadores.
-- [ ] Segmentar por párrafos y oraciones, respetando el orden del documento.
-- [ ] Preservar offsets exactos respecto al texto de origen y las referencias a sección/capítulo.
-- [ ] Establecer límites configurables de longitud sin cortar palabras ni perder puntuación.
+- [x] Definir el contrato `TextSegment` y sus identificadores (implementación inicial en revisión).
+- [x] Segmentar bloques por oraciones, respetando el orden del documento (implementación inicial; pendiente de validación).
+- [x] Preservar offsets relativos al bloque y referencias a sección/capítulo (semántica documentada; pendiente de validar con todos los extractores).
+- [x] Establecer límite configurable preferido sin cortar palabras ni perder puntuación (tokens individuales pueden exceder el límite).
 - [ ] Tratar abreviaturas, decimales, diálogos, listas, encabezados y puntuación compleja.
 - [ ] Añadir pruebas para TXT, PDF y EPUB, incluyendo documentos extensos y textos en español.
 - [ ] Verificar que la segmentación no altera el texto original ni rompe la continuidad entre segmentos.
