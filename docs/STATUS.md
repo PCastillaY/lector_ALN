@@ -3,7 +3,7 @@
 > **Última actualización:** 2026-11-06  
 > **Rama de trabajo:** `feat/lector-foundation`  
 > **Pull Request:** [#1 — Fundamentos de Lector ALN](https://github.com/PCastillaY/lector_ALN/pull/1)  
-> **Estado del PR:** abierto, Draft; la rama está 15 commits por delante de `main` y 0 por detrás. La última comprobación de Vercel quedó `pending`; una comprobación anterior reportó `failure`.  
+> **Estado del PR:** abierto, Draft; la rama está 19 commits por delante de `main` y 0 por detrás. La última comprobación de Vercel quedó `pending`; una comprobación anterior reportó `failure`.  
 > **Criterio rector:** buscar excelencia verificable; no confundir una demo funcional con un producto terminado.
 
 Este documento es el registro operativo del proyecto. Debe actualizarse al cerrar tareas, descubrir riesgos, cambiar decisiones o incorporar nuevas propuestas. Los estados describen lo que está implementado, no lo que está meramente documentado.
@@ -195,3 +195,14 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 4. Validar internamente EPUB/DOCX con un lector ZIP seguro; las firmas actuales solo confirman que parecen archivos ZIP.
 5. Revisar cuota disponible y manejo de `QuotaExceededError` antes de importar lotes o archivos grandes.
 6. Añadir lint sin introducir dependencias innecesarias y con configuración compatible con Next.js 16.
+
+
+## 10. Corrección de instalación congelada — 2026-11-06
+
+- Se investigó el log de Vercel aportado: `ERR_PNPM_OUTDATED_LOCKFILE` durante `pnpm install`.
+- Causa confirmada: cuatro especificadores en `package.json` no coincidían con los especificadores del importer raíz de `pnpm-lock.yaml`: `react`, `react-dom`, `@types/react` y `@types/react-dom`.
+- Se alineó `package.json` con las versiones exactas ya fijadas en el lockfile: React/React DOM `19.2.4`, tipos React `19.2.14` y tipos React DOM `19.2.3`.
+- No se modificó ni regeneró `pnpm-lock.yaml`; no se actualizaron versiones transitivas ni se añadieron dependencias.
+- Verificación estática posterior: los cuatro valores de `package.json` coinciden con los cuatro `specifier` del importer raíz del lockfile.
+- El commit de corrección es `e6ab01ba3db883adc82cef9e80620a29973a44a2`.
+- La comprobación de Vercel para este commit todavía aparece `pending`; por tanto, **la corrección está aplicada pero aún no está confirmada por una instalación real en Vercel**.
