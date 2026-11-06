@@ -5,7 +5,7 @@ const DEFAULT_MAX_LENGTH = 500
 
 const ABBREVIATIONS = new Set([
   "a", "adm", "aprox", "atte", "av", "c", "cap", "cía", "coord", "d", "da",
-  "dr", "dra", "ee", "ej", "etc", "fig", "gral", "ing", "lic", "máx", "mín",
+  "dr", "dra", "ee", "ej", "etc", "fig", "gral", "ing", "lic", "m", "máx", "mín",
   "núm", "p", "pág", "págs", "prof", "profa", "sr", "sra", "srta", "ud",
   "uds", "vol",
 ])
