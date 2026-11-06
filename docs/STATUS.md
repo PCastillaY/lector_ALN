@@ -1,13 +1,71 @@
 # Lector ALN — estado del proyecto
 
 > **Última actualización:** 2026-11-06  
-> **Rama de trabajo:** `feat/document-extraction-txt`  
-> **Pull Request:** en preparación, contra `main`.  
-> **Base integrada:** PR #1 fusionado; CI de la rama base completó instalación congelada, typecheck y build; Vercel reportó `success` para el commit de merge.  
-> **Estado de esta fase:** PR #1 y PR #2 integrados en `main`; extracción TXT y lector inicial en desarrollo, pendiente de CI y validación manual.  
+> **Rama base vigente:** `main`  
+> **Último PR integrado:** PR #5 — extracción EPUB local (Squash and merge).  
+> **Commit de PR #5:** `b29cfc4f769ab66921adefb6fe458605d396efaf`  
+> **Siguiente fase aprobada:** segmentación de texto, antes de implementar TTS.  
 > **Criterio rector:** buscar excelencia verificable; no confundir una demo funcional con un producto terminado.
 
-Este documento es el registro operativo del proyecto. Debe actualizarse al cerrar tareas, descubrir riesgos, cambiar decisiones o incorporar nuevas propuestas. Los estados describen lo que está implementado, no lo que está meramente documentado.
+Este documento es el registro operativo del proyecto. La sección «Estado vigente» prevalece sobre los registros históricos posteriores, que conservan el contexto de cada fase y pueden contener decisiones ya superadas.
+
+## Estado vigente — 2026-11-06
+
+### Estado ejecutivo
+
+La ruta **importar → extraer → leer** está implementada para los tres formatos incluidos en el alcance actual: TXT, PDF con capa de texto y EPUB. Las tres implementaciones están integradas en `main`. La extracción se realiza localmente.
+
+- [x] TXT: extracción local y lectura.
+- [x] PDF: extracción local de la capa de texto y lectura mediante PDF.js.
+- [x] EPUB: extracción local siguiendo el orden del spine, con metadatos, capítulos y offsets.
+- [x] PR #4 — PDF: fusionado en `main` mediante squash; commit `937897de5350295da5c4f6b81141197032ec634c`.
+- [x] PR #5 — EPUB: fusionado en `main` mediante squash; commit `b29cfc4f769ab66921adefb6fe458605d396efaf`.
+- [x] Validación manual de EPUB: casos sencillos, multicapítulo, español, estructura, texto con imágenes, archivo con firma incorrecta, contenido sin texto legible y EPUB extenso. La prueba de archivo dañado comprobó específicamente el rechazo por firma incompatible con la extensión; no equivale a probar toda posible corrupción interna del ZIP.
+- [x] En el último ciclo de EPUB se verificaron localmente `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm test` (31 pruebas) y `pnpm build`; CI de GitHub Actions y despliegue Vercel reportaron éxito para el commit de la rama antes de fusionar.
+
+### Decisiones de alcance vigentes
+
+- **Formatos:** limitar el producto por ahora a TXT, PDF con capa de texto y EPUB. No añadir DOCX, MOBI ni otros formatos en esta etapa.
+- **OCR:** aplazado para todos los formatos. Los PDF escaneados y el texto contenido exclusivamente en imágenes no se reconocerán mediante OCR.
+- **Narración:** todavía no implementada.
+- **Arquitectura:** mantener extracción específica por formato y normalización común mediante `DocumentContent`.
+- **Privacidad:** conservar el enfoque local-first; no enviar documentos a servicios externos como parte de la extracción.
+
+### Próxima fase aprobada: segmentación de texto
+
+Crear la rama `feat/text-segmentation` desde `main`. El objetivo es implementar una capa independiente que transforme el contenido normalizado en segmentos adecuados para narración futura, sin integrar todavía un motor TTS.
+
+Alcance propuesto para esa fase:
+
+- [ ] Definir el contrato `TextSegment` y sus identificadores.
+- [ ] Segmentar por párrafos y oraciones, respetando el orden del documento.
+- [ ] Preservar offsets exactos respecto al texto de origen y las referencias a sección/capítulo.
+- [ ] Establecer límites configurables de longitud sin cortar palabras ni perder puntuación.
+- [ ] Tratar abreviaturas, decimales, diálogos, listas, encabezados y puntuación compleja.
+- [ ] Añadir pruebas para TXT, PDF y EPUB, incluyendo documentos extensos y textos en español.
+- [ ] Verificar que la segmentación no altera el texto original ni rompe la continuidad entre segmentos.
+
+**Criterio de cierre:** los segmentos deben reconstruir el texto original en el orden correcto, mantener offsets coherentes, respetar límites de sección y superar pruebas automatizadas. Solo después se iniciará la integración TTS.
+
+### Fases posteriores (no iniciar todavía)
+
+1. Diseñar el contrato desacoplado `TTSProvider` y evaluar motores/voices.
+2. Implementar reproducción, pausa, reanudación, cancelación, cola y manejo de errores.
+3. Sincronizar narración con resaltado y desplazamiento del lector.
+4. Evaluar persistencia de progreso y funcionamiento offline de voces.
+
+### Pendientes transversales no bloqueantes para la siguiente fase
+
+- [ ] Añadir lint compatible con Next.js 16.
+- [ ] Ampliar pruebas reales de IndexedDB en navegador, cuota agotada y ciclo de vida de transacciones.
+- [ ] Revisar manejo de cuota y errores de almacenamiento.
+- [ ] Mantener pruebas de regresión de importación, extracción y lectura de TXT/PDF/EPUB.
+
+---
+
+## Registro histórico
+
+Los apartados siguientes documentan decisiones y estados de etapas anteriores. Sus listas de pendientes y descripciones de formatos reflejan el momento en que fueron escritos; no deben interpretarse como el estado actual si contradicen la sección «Estado vigente».
 
 ## 1. Estado ejecutivo
 
