@@ -71,8 +71,8 @@ export async function extractPdfDocument(
 
   let pdfjs = suppliedPdfJs
   if (!pdfjs) {
-    const module = await import("pdfjs-dist")
-    pdfjs = module as unknown as PdfJsApi
+    const pdfjsModule = await import("pdfjs-dist")
+    pdfjs = pdfjsModule as unknown as PdfJsApi
   }
 
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
