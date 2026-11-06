@@ -102,6 +102,7 @@ components/
 lib/
   documents/
     adapters/
+    extraction/
     segmentation/
     types.ts
     validation.ts

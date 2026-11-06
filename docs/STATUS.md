@@ -4,7 +4,7 @@
 > **Rama de trabajo:** `feat/document-extraction-txt`  
 > **Pull Request:** en preparación, contra `main`.  
 > **Base integrada:** PR #1 fusionado; CI de la rama base completó instalación congelada, typecheck y build; Vercel reportó `success` para el commit de merge.  
-> **Estado de esta fase:** suite inicial aprobada en CI; instalación congelada, typecheck, tests y build completados correctamente. Vercel reportó `success`.  
+> **Estado de esta fase:** PR #1 y PR #2 integrados en `main`; extracción TXT y lector inicial en desarrollo, pendiente de CI y validación manual.  
 > **Criterio rector:** buscar excelencia verificable; no confundir una demo funcional con un producto terminado.
 
 Este documento es el registro operativo del proyecto. Debe actualizarse al cerrar tareas, descubrir riesgos, cambiar decisiones o incorporar nuevas propuestas. Los estados describen lo que está implementado, no lo que está meramente documentado.
@@ -29,7 +29,7 @@ La arquitectura objetivo está definida como **local-first**, instalable como PW
 - [x] Eliminada la opción que ocultaba errores de TypeScript durante el build.
 - [x] Arquitectura documentada con prioridad TTS local, voces españolas, PWA y cloud opcional.
 
-**Alcance real de la biblioteca:** importa y conserva archivos. No los abre, no valida todavía su estructura interna y no extrae texto. El estado mostrado como pendiente de procesamiento es correcto.
+**Alcance real de la biblioteca:** importa y conserva archivos. Esta rama añade extracción y lectura local para TXT. PDF, EPUB, DOCX y MOBI todavía no tienen adaptadores; no se deben presentar como formatos legibles hasta implementarlos.
 
 ## 3. Pendientes prioritarios
 
@@ -125,7 +125,7 @@ El límite por archivo no considera la cuota total disponible, los demás datos 
 Las funciones actuales cierran la conexión tras operaciones exitosas, pero deben garantizar su cierre también en errores. Faltan pruebas de cuota agotada, abortos, actualizaciones de esquema y concurrencia. La persistencia del navegador no equivale a una copia de seguridad.
 
 ### 4.4 La interfaz puede inducir expectativas superiores a la capacidad real
-La página presenta formatos admitidos y una biblioteca, pero aún no existe lectura. Debe mantener visible que el archivo solo está almacenado y que todavía no se ha procesado. No anunciar narración, soporte offline o sincronización como capacidades disponibles hasta superar pruebas de aceptación.
+La biblioteca ahora distingue TXT listo para abrir de otros formatos pendientes de extracción. No anunciar lectura de PDF/EPUB/DOCX/MOBI, narración, soporte offline o sincronización como capacidades disponibles hasta superar pruebas de aceptación.
 
 ### 4.5 El objetivo de voces españolas aún no está resuelto
 Kokoro es candidato, no decisión final. La presencia de voces etiquetadas como español no garantiza acento latinoamericano, prosodia de audiolibro ni pronunciación correcta. Piper tampoco debe asumirse como mejor sin comparar runtime, calidad, tamaño y licencias.
@@ -134,7 +134,7 @@ Kokoro es candidato, no decisión final. La presencia de voces etiquetadas como 
 Una PWA instalable no garantiza que el modelo neural quepa en memoria, que WebGPU funcione o que el navegador conserve los archivos. Se debe demostrar el flujo completo en dispositivos objetivo, incluidos fallos y recuperación.
 
 ### 4.7 Evidencia automatizada parcial
-La base integrada ya pasó instalación congelada, typecheck y build en CI, y Vercel reportó un despliegue correcto. Esta rama incorpora pruebas iniciales para la validación de extensiones, tamaño y firmas de TXT/PDF/ZIP/MOBI. Aún falta lint y pruebas de comportamiento de IndexedDB en navegador. No se debe interpretar la suite inicial como cobertura completa de importación ni persistencia.
+La base integrada ya pasó instalación congelada, typecheck y build en CI, y Vercel reportó un despliegue correcto. La base integrada incorpora pruebas iniciales para la validación de extensiones, tamaño y firmas de TXT/PDF/ZIP/MOBI. La rama actual añade pruebas unitarias de extracción TXT. Aún falta lint y pruebas de comportamiento de IndexedDB en navegador. No se debe interpretar la suite inicial como cobertura completa de importación ni persistencia.
 
 ### 4.8 El alcance es amplio
 Cinco formatos, extracción, biblioteca dual, PWA, TTS neural local, catálogo de voces, cloud y sincronización son un alcance considerable. Intentar desarrollarlo todo en paralelo aumenta el riesgo de una arquitectura compleja sin un flujo de lectura sólido. La secuencia debe priorizar un recorrido vertical funcional: importar → extraer → leer → narrar localmente → continuar offline.

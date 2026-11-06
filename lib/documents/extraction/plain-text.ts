@@ -62,7 +62,6 @@ export async function extractPlainTextDocument(document: StoredDocument): Promis
 
   return {
     title: document.title,
-    language: "es",
     sections: [{
       id: "section-1",
       title: document.title,

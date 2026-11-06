@@ -37,7 +37,11 @@ try {
   ])
 
   if (compiled) {
-    const tested = run(process.execPath, ["--test", path.join(root, "tests")], {
+    const tested = run(process.execPath, [
+      "--test",
+      path.join(root, "tests/document-validation.test.cjs"),
+      path.join(root, "tests/plain-text-extraction.test.cjs"),
+    ], {
       ...process.env,
       LECTOR_TEST_BUILD: tempDir,
     })

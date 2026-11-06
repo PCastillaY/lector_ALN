@@ -7,8 +7,10 @@ if (!buildDir) throw new Error("LECTOR_TEST_BUILD no está definido; ejecuta pnp
 
 const { extractDocumentContent } = require(path.join(buildDir, "lib/documents/extract.js"))
 
-function makeDocument(text, overrides = {}) {
-  const file = new File([text], "lectura.txt", { type: "text/plain" })
+function makeDocument(content, overrides = {}) {
+  const file = content instanceof File
+    ? content
+    : new File([content], "lectura.txt", { type: "text/plain" })
   return {
     id: "doc-1",
     title: "Lectura de prueba",
@@ -39,7 +41,7 @@ test("extrae TXT UTF-8 y conserva párrafos y offsets", async () => {
 test("decodifica UTF-8 con BOM", async () => {
   const bytes = new Uint8Array([0xef, 0xbb, 0xbf, ...new TextEncoder().encode("Texto con BOM")])
   const file = new File([bytes], "bom.txt")
-  const result = await extractDocumentContent(makeDocument(file, { file }))
+  const result = await extractDocumentContent(makeDocument(file))
   assert.equal(result.sections[0].blocks[0].text, "Texto con BOM")
 })
 
@@ -49,7 +51,7 @@ test("rechaza contenido vacío o solo espacios", async () => {
 
 test("rechaza secuencias UTF-8 inválidas", async () => {
   const file = new File([new Uint8Array([0xc3, 0x28])], "invalid.txt")
-  await assert.rejects(() => extractDocumentContent(makeDocument(file, { file })), /UTF-8/)
+  await assert.rejects(() => extractDocumentContent(makeDocument(file)), /UTF-8/)
 })
 
 test("rechaza archivos con bytes NUL", async () => {
