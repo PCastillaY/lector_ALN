@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, "feat/**"]
+    branches: [main]
 
 permissions:
   contents: read
@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Typecheck and production build
+    name: Install, test and production build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
