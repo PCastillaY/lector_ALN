@@ -27,6 +27,8 @@ Aplicación web instalable de lectura asistida que importa documentos, presenta 
 ### 2. Dominio documental
 Contrato común `DocumentRecord`: id, nombre, formato, tamaño, fecha de importación, origen de almacenamiento y estado de procesamiento.
 - Adaptadores: EPUB (epub.js), PDF (PDF.js), TXT (TextDecoder), DOCX (mammoth).
+- El adaptador PDF procesa localmente la capa de texto con PDF.js; cada página con contenido se conserva como sección independiente. El worker de PDF.js se sirve desde el mismo origen, preparado desde la dependencia fijada durante `pnpm dev` y `pnpm build`.
+- PDF protegidos con contraseña y PDF sin texto seleccionable se informan como no compatibles; OCR queda fuera del alcance inicial.
 - MOBI: adaptador/conversión aislada; evaluar compatibilidad y licencias antes de incorporarlo.
 - Salida normalizada: `DocumentContent` con título, metadatos, secciones y bloques de texto ordenados.
 - Segmentador: divide por párrafos/oraciones y limita longitud de fragmentos para TTS, conservando offsets para sincronización.

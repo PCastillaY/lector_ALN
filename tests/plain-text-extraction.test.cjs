@@ -61,7 +61,7 @@ test("rechaza archivos con bytes NUL", async () => {
 
 test("informa cuando un formato todavía no tiene adaptador", async () => {
   await assert.rejects(
-    () => extractDocumentContent(makeDocument("data", { format: "pdf" })),
-    /PDF todavía no está disponible/,
+    () => extractDocumentContent(makeDocument("data", { format: "docx" })),
+    /DOCX todavía no está disponible/,
   )
 })

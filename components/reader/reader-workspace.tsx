@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { ArrowLeft, BookOpen, LoaderCircle } from "lucide-react"
-import type { DocumentContent } from "@/lib/documents/types"
+import type { DocumentContent, DocumentFormat } from "@/lib/documents/types"
 import { extractDocumentContent } from "@/lib/documents/extract"
 import { getLocalDocument } from "@/lib/storage/local/document-store"
 
@@ -13,6 +13,7 @@ interface ReaderWorkspaceProps {
 
 export function ReaderWorkspace({ documentId }: ReaderWorkspaceProps) {
   const [content, setContent] = useState<DocumentContent | null>(null)
+  const [format, setFormat] = useState<DocumentFormat | null>(null)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
 
@@ -22,11 +23,15 @@ export function ReaderWorkspace({ documentId }: ReaderWorkspaceProps) {
     async function loadDocument() {
       setLoading(true)
       setError("")
+      setContent(null)
       try {
         const document = await getLocalDocument(documentId)
         if (!document) throw new Error("El documento no existe en esta biblioteca local.")
         const extracted = await extractDocumentContent(document)
-        if (!cancelled) setContent(extracted)
+        if (!cancelled) {
+          setContent(extracted)
+          setFormat(document.format)
+        }
       } catch (cause) {
         if (!cancelled) {
           setError(cause instanceof Error ? cause.message : "No se pudo abrir el documento.")
@@ -64,11 +69,20 @@ export function ReaderWorkspace({ documentId }: ReaderWorkspaceProps) {
           </section>
         ) : content ? (
           <>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">Lectura local · TXT</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">Lectura local · {format?.toUpperCase()}</p>
             <h1 className="mb-8 text-3xl font-semibold tracking-tight sm:text-4xl">{content.title}</h1>
-            <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 text-base leading-8 shadow-sm sm:p-10">
-              {content.sections.flatMap(section => section.blocks).map(block => (
-                <p key={block.id} className="whitespace-pre-wrap break-words">{block.text}</p>
+            <div className="space-y-8 rounded-2xl border border-slate-200 bg-white p-6 text-base leading-8 shadow-sm sm:p-10">
+              {content.sections.map(section => (
+                <section key={section.id} aria-label={section.title}>
+                  {format === "pdf" && (
+                    <h2 className="mb-4 border-b border-slate-100 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {section.title}
+                    </h2>
+                  )}
+                  {section.blocks.map(block => (
+                    <p key={block.id} className="whitespace-pre-wrap break-words">{block.text}</p>
+                  ))}
+                </section>
               ))}
             </div>
             <p className="mt-5 text-xs text-slate-500">El contenido se extrajo en este dispositivo. El archivo original permanece en la biblioteca local.</p>
