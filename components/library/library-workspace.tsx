@@ -144,7 +144,7 @@ export function LibraryWorkspace() {
           <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
             <span className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-indigo-50 text-indigo-600"><UploadCloud size={26} /></span>
             <h3 className="text-lg font-semibold">Tu biblioteca está vacía</h3>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">Añade un EPUB, PDF, TXT, DOCX o MOBI. La lectura está habilitada para TXT y PDF con texto seleccionable. Los PDF escaneados requieren OCR, todavía no disponible.</p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">Añade un EPUB, PDF, TXT, DOCX o MOBI. La lectura está habilitada para EPUB, TXT y PDF con texto seleccionable. Los PDF escaneados requieren OCR, todavía no disponible.</p>
             <button onClick={() => inputRef.current?.click()} className="mt-5 inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50"><FilePlus2 size={16} /> Seleccionar archivos</button>
           </div>
         ) : (
@@ -155,10 +155,10 @@ export function LibraryWorkspace() {
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate text-sm font-semibold">{document.title}</h3>
                   <p className="mt-1 text-xs text-slate-500">{formatLabels[document.format]} · {formatSize(document.sizeBytes)} · {new Date(document.importedAt).toLocaleDateString("es-PE")}</p>
-                  <p className="mt-1 text-xs text-amber-700">{document.format === "txt" ? "TXT · listo para abrir" : document.format === "pdf" ? "PDF · listo para abrir" : "Importado · extracción pendiente"}</p>
+                  <p className="mt-1 text-xs text-amber-700">{document.format === "txt" ? "TXT · listo para abrir" : document.format === "pdf" ? "PDF · listo para abrir" : document.format === "epub" ? "EPUB · listo para abrir" : "Importado · extracción pendiente"}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  {document.format === "txt" || document.format === "pdf" ? (
+                  {document.format === "txt" || document.format === "pdf" || document.format === "epub" ? (
                     <Link href={`/reader/${encodeURIComponent(document.id)}`} className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50">Abrir</Link>
                   ) : (
                     <span className="px-2 text-xs text-slate-400" aria-label="Extractor pendiente">Próximamente</span>
