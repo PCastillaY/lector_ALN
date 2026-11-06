@@ -70,6 +70,22 @@ function getSectionBlocks(
     cursor += text.length + 2
   }
 
+  // Some EPUBs use generic containers instead of semantic paragraph elements.
+  if (blocks.length === 0) {
+    const rawText = document.body?.textContent ?? document.documentElement?.textContent ?? ""
+    let text = rawText.replace(/\\u00a0/g, " ").replace(/\\s+/g, " ").trim()
+    if (title && text.startsWith(title)) text = text.slice(title.length).trim()
+    if (text) {
+      blocks.push({
+        id: `${sectionId}-block-1`,
+        text,
+        startOffset: cursor,
+        endOffset: cursor + text.length,
+      })
+      cursor += text.length + 2
+    }
+  }
+
   return { blocks, title, nextOffset: cursor }
 }
 
