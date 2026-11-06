@@ -1,16 +1,17 @@
 # Lector ALN — estado del proyecto
 
 > **Última actualización:** 2026-11-06  
-> **Rama de trabajo:** `feat/lector-foundation`  
-> **Pull Request:** [#1 — Fundamentos de Lector ALN](https://github.com/PCastillaY/lector_ALN/pull/1)  
-> **Estado del PR:** abierto, Draft; la rama está 19 commits por delante de `main` y 0 por detrás. La última comprobación de Vercel quedó `pending`; una comprobación anterior reportó `failure`.  
+> **Rama de trabajo:** `feat/foundation-quality`  
+> **Pull Request:** en preparación, contra `main`.  
+> **Base integrada:** PR #1 fusionado; CI de la rama base completó instalación congelada, typecheck y build; Vercel reportó `success` para el commit de merge.  
+> **Estado de esta fase:** suite inicial de validación documental añadida; ejecución CI de esta rama pendiente.  
 > **Criterio rector:** buscar excelencia verificable; no confundir una demo funcional con un producto terminado.
 
 Este documento es el registro operativo del proyecto. Debe actualizarse al cerrar tareas, descubrir riesgos, cambiar decisiones o incorporar nuevas propuestas. Los estados describen lo que está implementado, no lo que está meramente documentado.
 
 ## 1. Estado ejecutivo
 
-Lector ALN se encuentra en una **fase de fundación técnica**. La aplicación permite importar documentos y almacenarlos en IndexedDB, pero todavía no extrae ni presenta su contenido y no narra audio.
+Lector ALN se encuentra en una **fase de endurecimiento de la fundación técnica**. La aplicación permite importar documentos y almacenarlos en IndexedDB, pero todavía no extrae ni presenta su contenido y no narra audio. La base integrada superó instalación congelada, typecheck y build; esta rama añade pruebas automatizadas iniciales para la validación documental.
 
 La arquitectura objetivo está definida como **local-first**, instalable como PWA y centrada en voces neuronales en español. La narración offline es un requisito de producto, no una promesa ya implementada.
 
@@ -34,9 +35,11 @@ La arquitectura objetivo está definida como **local-first**, instalable como PW
 
 ### P0 — Bloqueantes de calidad y fiabilidad
 
-- [ ] Ejecutar instalación reproducible con el lockfile existente y registrar versiones/entorno. Se añadió CI con `pnpm install --frozen-lockfile`; primera ejecución aún no observada.
-- [ ] Ejecutar `pnpm build`; corregir todos los errores TypeScript y de compilación. El workflow ejecutará build y typecheck, pero no hay resultado confirmado todavía.
-- [ ] Añadir lint y pruebas automatizadas. Ya existe script `typecheck` y workflow de CI para typecheck/build; aún no se han incorporado linter ni tests.
+- [x] Instalación reproducible con `pnpm install --frozen-lockfile`, `pnpm typecheck` y `pnpm build` completados en CI para la base integrada (PR #1); Vercel reportó `success` para el commit de merge.
+- [ ] Confirmar que la nueva rama conserva instalación reproducible, typecheck y build; el workflow de esta rama aún debe ejecutarse.
+- [ ] Añadir lint con configuración compatible con Next.js 16, sin introducir una configuración obsoleta (`next lint` no debe asumirse disponible).
+- [x] Añadida una suite inicial de pruebas de validación documental con Node.js `node:test`, sin dependencias de runtime nuevas. La primera ejecución CI de esta rama está pendiente.
+- [ ] Añadir pruebas de comportamiento para IndexedDB en un navegador o con un adaptador de pruebas mantenido; no confundir mocks simplificados con cobertura real de IndexedDB.
 - [ ] Probar IndexedDB en navegadores objetivo, incluyendo cierre/reapertura, archivos grandes, cuota agotada y errores de transacción.
 - [x] Corregido en código: cerrar conexiones IndexedDB en `finally`, cerrar conexiones tardías tras aperturas bloqueadas y manejar abortos de transacción. Pendiente de pruebas en navegador.
 - [x] Corregido en código: la eliminación captura errores, informa el resultado y bloquea acciones concurrentes. Pendiente de prueba manual.
@@ -119,8 +122,8 @@ Kokoro es candidato, no decisión final. La presencia de voces etiquetadas como 
 ### 4.6 PWA offline no es simplemente instalar la web
 Una PWA instalable no garantiza que el modelo neural quepa en memoria, que WebGPU funcione o que el navegador conserve los archivos. Se debe demostrar el flujo completo en dispositivos objetivo, incluidos fallos y recuperación.
 
-### 4.7 Falta evidencia automatizada
-El PR registra que no se han ejecutado build, lint ni pruebas. No se debe integrar una base de código sin una validación reproducible. La ausencia de errores observados no equivale a calidad verificada.
+### 4.7 Evidencia automatizada parcial
+La base integrada ya pasó instalación congelada, typecheck y build en CI, y Vercel reportó un despliegue correcto. Esta rama incorpora pruebas iniciales para la validación de extensiones, tamaño y firmas de TXT/PDF/ZIP/MOBI. Aún faltan resultados de CI para esta rama, lint y pruebas de comportamiento de IndexedDB en navegador. No se debe interpretar la suite inicial como cobertura completa de importación ni persistencia.
 
 ### 4.8 El alcance es amplio
 Cinco formatos, extracción, biblioteca dual, PWA, TTS neural local, catálogo de voces, cloud y sincronización son un alcance considerable. Intentar desarrollarlo todo en paralelo aumenta el riesgo de una arquitectura compleja sin un flujo de lectura sólido. La secuencia debe priorizar un recorrido vertical funcional: importar → extraer → leer → narrar localmente → continuar offline.
@@ -158,7 +161,7 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 
 ## 7. Secuencia recomendada de ejecución
 
-1. **Cerrar calidad de la fundación:** instalar, compilar, añadir lint/tests y corregir persistencia/validación.
+1. **Cerrar calidad de la fundación:** confirmar CI en esta rama, ampliar pruebas, añadir lint compatible y validar persistencia/cuotas en navegador.
 2. **Completar un primer flujo documental:** comenzar por TXT y PDF con texto; añadir EPUB y DOCX después de estabilizar adaptadores. Evaluar MOBI por separado.
 3. **Crear corpus y laboratorio TTS español:** comparar Kokoro/Piper y decidir con datos.
 4. **Implementar narración local por fragmentos:** probar estabilidad y calidad antes de pulir la interfaz.
@@ -206,3 +209,19 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 - Verificación estática posterior: los cuatro valores de `package.json` coinciden con los cuatro `specifier` del importer raíz del lockfile.
 - El commit de corrección es `e6ab01ba3db883adc82cef9e80620a29973a44a2`.
 - La comprobación de Vercel para este commit todavía aparece `pending`; por tanto, **la corrección está aplicada pero aún no está confirmada por una instalación real en Vercel**.
+
+
+## 11. Endurecimiento de calidad — 2026-11-06
+
+- Se confirmó que el PR #1 fue fusionado a `main`. El commit de merge registrado es `1bd121ef0bf3938512a77e822571f4f14254559d`.
+- La base integrada completó en GitHub Actions la instalación con lockfile congelado, `pnpm typecheck` y `pnpm build`. Vercel reportó `success` para el commit de merge.
+- Se creó la rama `feat/foundation-quality` a partir de `main`; los cambios de esta fase no se escriben directamente en `main`.
+- Se añadió `pnpm test`, ejecutado mediante Node.js `node:test` y el compilador TypeScript ya instalado. No se añadieron dependencias ni se modificó `pnpm-lock.yaml`.
+- La suite inicial cubre: extensión no admitida, archivo vacío, límite de 100 MB, TXT no vacío, firma PDF, firmas ZIP para EPUB/DOCX y firma MOBI según el criterio actual del validador.
+- El runner compila temporalmente los módulos TypeScript requeridos en una carpeta del sistema y elimina esa carpeta al terminar. Los errores de compilación o de pruebas devuelven código distinto de cero.
+- El workflow CI ahora ejecuta `pnpm test` después de `pnpm typecheck` y antes del build.
+- **Pendiente de evidencia:** esta nueva rama debe completar su propio CI; no se declara que los tests nuevos ya pasaron.
+- **Pendiente:** pruebas de integración reales para IndexedDB, cuota agotada, concurrencia y ciclo de vida de transacciones. No se añadió una implementación fake casera porque podría dar una falsa sensación de cobertura.
+- **Pendiente:** lint. Next.js 16 no debe configurarse con el antiguo comando `next lint`; se evaluará una configuración ESLint compatible y se regenerará el lockfile de forma reproducible si se justifica incorporar dependencias.
+- **Pendiente:** validación estructural ZIP para EPUB/DOCX, incluida inspección de entradas obligatorias; la firma ZIP actual no garantiza que el archivo sea un EPUB o DOCX válido.
+- **Pendiente:** consulta de cuota y manejo explícito de `QuotaExceededError` en la experiencia de importación.
