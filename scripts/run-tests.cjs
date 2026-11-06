@@ -16,11 +16,11 @@ function run(command, args, env = process.env) {
   })
 
   if (result.error) throw result.error
-  if (result.status !== 0) process.exitCode = result.status ?? 1
+  return result.status === 0
 }
 
 try {
-  run(process.execPath, [
+  const compiled = run(process.execPath, [
     tscCli,
     "--module", "commonjs",
     "--moduleResolution", "node",
@@ -34,11 +34,13 @@ try {
     path.join(root, "lib/documents/validation.ts"),
   ])
 
-  if (process.exitCode !== 1) {
+  if (compiled) {
     run(process.execPath, ["--test", path.join(root, "tests/document-validation.test.cjs")], {
       ...process.env,
       LECTOR_TEST_BUILD: tempDir,
     })
+  } else {
+    process.exitCode = 1
   }
 } finally {
   rmSync(tempDir, { recursive: true, force: true })
