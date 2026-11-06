@@ -114,7 +114,7 @@ test("rechaza EPUB sin texto legible y libera el libro", async () => {
   const fake = fakeEpubFactory([fakeSection(0, [])])
   await assert.rejects(
     () => extractEpubDocument(makeDocument(), fake.factory),
-    /no se pudo procesar el EPUB/i,
+    /no contiene texto legible/i,
   )
   assert.equal(fake.state.destroyed, 1)
 })
