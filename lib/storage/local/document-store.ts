@@ -12,6 +12,8 @@ function openDatabase(): Promise<IDBDatabase> {
     }
 
     const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION)
+    let settled = false
+
     request.onupgradeneeded = () => {
       const database = request.result
       if (!database.objectStoreNames.contains(STORE_NAME)) {
@@ -20,11 +22,24 @@ function openDatabase(): Promise<IDBDatabase> {
     }
     request.onsuccess = () => {
       const database = request.result
+      if (settled) {
+        database.close()
+        return
+      }
       database.onversionchange = () => database.close()
+      settled = true
       resolve(database)
     }
-    request.onerror = () => reject(request.error ?? new Error("No se pudo abrir la biblioteca local."))
-    request.onblocked = () => reject(new Error("La actualización de la biblioteca está bloqueada por otra pestaña. Cierra otras pestañas de Lector ALN e inténtalo de nuevo."))
+    request.onerror = () => {
+      if (settled) return
+      settled = true
+      reject(request.error ?? new Error("No se pudo abrir la biblioteca local."))
+    }
+    request.onblocked = () => {
+      if (settled) return
+      settled = true
+      reject(new Error("La actualización de la biblioteca está bloqueada por otra pestaña. Cierra otras pestañas de Lector ALN e inténtalo de nuevo."))
+    }
   })
 }
 
