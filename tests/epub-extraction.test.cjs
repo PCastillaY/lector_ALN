@@ -27,8 +27,8 @@ function element(tagName, textContent) {
   return { tagName: tagName.toUpperCase(), textContent, parentElement: null }
 }
 
-function fakeSection(index, elements) {
-  const document = { querySelectorAll: () => elements }
+function fakeSection(index, elements, rawText = "") {
+  const document = { querySelectorAll: () => elements, body: { textContent: rawText } }
   return {
     index,
     href: `chapter-${index + 1}.xhtml`,
@@ -132,5 +132,15 @@ test("convierte errores de estructura interna en un mensaje entendible y libera 
     () => extractEpubDocument(makeDocument(), fake.factory),
     /EPUB válido.*estructura interna/i,
   )
+  assert.equal(fake.state.destroyed, 1)
+})
+
+test("recupera texto de capítulos EPUB que usan contenedores genéricos", async () => {
+  const section = fakeSection(0, [], "Texto dentro de un contenedor genérico.")
+  const fake = fakeEpubFactory([section])
+  const result = await extractEpubDocument(makeDocument(), fake.factory)
+
+  assert.equal(result.sections.length, 1)
+  assert.equal(result.sections[0].blocks[0].text, "Texto dentro de un contenedor genérico.")
   assert.equal(fake.state.destroyed, 1)
 })
