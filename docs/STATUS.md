@@ -1,7 +1,7 @@
 # Lector ALN — estado del proyecto
 
 > **Última actualización:** 2026-11-06  
-> **Rama de trabajo:** `feat/foundation-quality`  
+> **Rama de trabajo:** `feat/document-extraction-txt`  
 > **Pull Request:** en preparación, contra `main`.  
 > **Base integrada:** PR #1 fusionado; CI de la rama base completó instalación congelada, typecheck y build; Vercel reportó `success` para el commit de merge.  
 > **Estado de esta fase:** suite inicial aprobada en CI; instalación congelada, typecheck, tests y build completados correctamente. Vercel reportó `success`.  
@@ -11,7 +11,7 @@ Este documento es el registro operativo del proyecto. Debe actualizarse al cerra
 
 ## 1. Estado ejecutivo
 
-Lector ALN se encuentra en una **fase de endurecimiento de la fundación técnica**. La aplicación permite importar documentos y almacenarlos en IndexedDB, pero todavía no extrae ni presenta su contenido y no narra audio. La base integrada superó instalación congelada, typecheck y build; esta rama añade pruebas automatizadas iniciales para la validación documental.
+Lector ALN completó la fundación técnica y su endurecimiento de calidad mediante PR #1 y PR #2, ambos integrados en `main`. Esta rama inicia la lectura real con extracción TXT local y una primera vista de lectura. PDF, EPUB y DOCX todavía requieren sus adaptadores; no existe narración TTS.
 
 La arquitectura objetivo está definida como **local-first**, instalable como PWA y centrada en voces neuronales en español. La narración offline es un requisito de producto, no una promesa ya implementada.
 
@@ -49,7 +49,7 @@ La arquitectura objetivo está definida como **local-first**, instalable como PW
 
 ### P1 — Convertir la biblioteca en un lector
 
-- [ ] Implementar extracción de TXT, PDF con capa de texto, DOCX y EPUB mediante adaptadores aislados.
+- [x] Implementar extracción TXT mediante un adaptador local UTF-8 y contrato común de contenido (esta rama; pendiente de CI y revisión manual).\n- [ ] Implementar extracción de PDF con capa de texto mediante PDF.js; requiere fijar dependencia y actualizar lockfile de forma reproducible.\n- [ ] Implementar extracción DOCX y EPUB mediante adaptadores aislados.
 - [ ] Evaluar MOBI por separado; no prometer compatibilidad hasta demostrar extracción fiable y revisar dependencias/licencias.
 - [ ] Detectar PDF sin capa de texto y explicar que OCR no está soportado.
 - [ ] Normalizar el resultado a `DocumentContent`, con secciones y bloques estables.
@@ -101,6 +101,17 @@ La arquitectura objetivo está definida como **local-first**, instalable como PW
 - [ ] Evaluar TTS cloud opcional con límites de coste, cuotas, privacidad y fallback transparente.
 - [ ] Considerar OCR como módulo separado, con coste de CPU, privacidad y calidad medidos.
 - [ ] Considerar app de escritorio Tauri/Electron solo si la PWA no satisface las necesidades de almacenamiento o ejecución.
+
+## 12. Primer lector y extracción TXT — 2026-11-06
+
+- Se creó la rama `feat/document-extraction-txt` desde el commit integrado de PR #2; `main` permanece intacta.
+- Se incorpora recuperación individual de un documento almacenado en IndexedDB.
+- Se define un punto de entrada común `extractDocumentContent` y un adaptador TXT local basado en UTF-8 estricto.
+- La extracción conserva el texto visible y separa párrafos en bloques con offsets sobre el texto decodificado. Rechaza archivos vacíos, UTF-8 inválido y contenido con bytes NUL que sugieran un archivo binario.
+- Se añade una ruta de lectura para documentos TXT y se evita ofrecer la acción de abrir para formatos cuyo adaptador todavía no existe.
+- No se añade ninguna dependencia ni se modifica `pnpm-lock.yaml`.
+- **Pendiente de validación:** ejecutar typecheck, pruebas y build en Codespaces/CI; probar TXT con BOM, saltos de línea CRLF, párrafos largos, caracteres acentuados y UTF-8 inválido.
+- **Limitación deliberada:** PDF aún no se procesa. Se añadirá PDF.js como dependencia fijada en un PR posterior o continuación de esta rama, con actualización real del lockfile. No se usará un CDN como sustituto del parser.
 
 ## 4. Observaciones críticas y riesgos conocidos
 
@@ -225,3 +236,15 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 - **Pendiente:** lint. Next.js 16 no debe configurarse con el antiguo comando `next lint`; se evaluará una configuración ESLint compatible y se regenerará el lockfile de forma reproducible si se justifica incorporar dependencias.
 - **Pendiente:** validación estructural ZIP para EPUB/DOCX, incluida inspección de entradas obligatorias; la firma ZIP actual no garantiza que el archivo sea un EPUB o DOCX válido.
 - **Pendiente:** consulta de cuota y manejo explícito de `QuotaExceededError` en la experiencia de importación.
+
+
+## 12. Primer lector y extracción TXT — 2026-11-06
+
+- Se creó la rama `feat/document-extraction-txt` desde el commit integrado de PR #2; `main` permanece intacta.
+- Se incorpora recuperación individual de un documento almacenado en IndexedDB.
+- Se define un punto de entrada común `extractDocumentContent` y un adaptador TXT local basado en UTF-8 estricto.
+- La extracción conserva el texto visible y separa párrafos en bloques con offsets sobre el texto decodificado. Rechaza archivos vacíos, UTF-8 inválido y contenido con bytes NUL que sugieran un archivo binario.
+- Se añade una ruta de lectura para documentos TXT y se evita ofrecer la acción de abrir para formatos cuyo adaptador todavía no existe.
+- No se añade ninguna dependencia ni se modifica `pnpm-lock.yaml`.
+- **Pendiente de validación:** ejecutar typecheck, pruebas y build en Codespaces/CI; probar TXT con BOM, saltos de línea CRLF, párrafos largos, caracteres acentuados y UTF-8 inválido.
+- **Limitación deliberada:** PDF aún no se procesa. Se añadirá PDF.js como dependencia fijada en un PR posterior o continuación de esta rama, con actualización real del lockfile. No se usará un CDN como sustituto del parser.

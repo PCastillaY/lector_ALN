@@ -32,10 +32,12 @@ try {
     "--outDir", tempDir,
     path.join(root, "lib/documents/types.ts"),
     path.join(root, "lib/documents/validation.ts"),
+    path.join(root, "lib/documents/extraction/plain-text.ts"),
+    path.join(root, "lib/documents/extract.ts"),
   ])
 
   if (compiled) {
-    const tested = run(process.execPath, ["--test", path.join(root, "tests/document-validation.test.cjs")], {
+    const tested = run(process.execPath, ["--test", path.join(root, "tests")], {
       ...process.env,
       LECTOR_TEST_BUILD: tempDir,
     })
