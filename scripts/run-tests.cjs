@@ -34,6 +34,7 @@ try {
     path.join(root, "lib/documents/validation.ts"),
     path.join(root, "lib/documents/extraction/plain-text.ts"),
     path.join(root, "lib/documents/extraction/pdf.ts"),
+    path.join(root, "lib/documents/extraction/epub.ts"),
     path.join(root, "lib/documents/extract.ts"),
   ])
 
@@ -43,6 +44,7 @@ try {
       path.join(root, "tests/document-validation.test.cjs"),
       path.join(root, "tests/plain-text-extraction.test.cjs"),
       path.join(root, "tests/pdf-extraction.test.cjs"),
+      path.join(root, "tests/epub-extraction.test.cjs"),
     ], {
       ...process.env,
       LECTOR_TEST_BUILD: tempDir,
