@@ -43,6 +43,21 @@ function openDatabase(): Promise<IDBDatabase> {
   })
 }
 
+export async function getLocalDocument(id: string): Promise<StoredDocument | null> {
+  const database = await openDatabase()
+  try {
+    return await new Promise<StoredDocument | null>((resolve, reject) => {
+      const transaction = database.transaction(STORE_NAME, "readonly")
+      const request = transaction.objectStore(STORE_NAME).get(id)
+      request.onsuccess = () => resolve((request.result as StoredDocument | undefined) ?? null)
+      request.onerror = () => reject(request.error ?? new Error("No se pudo abrir el documento."))
+      transaction.onabort = () => reject(transaction.error ?? new Error("Se canceló la lectura del documento."))
+    })
+  } finally {
+    database.close()
+  }
+}
+
 export async function saveLocalDocument(document: StoredDocument): Promise<void> {
   const database = await openDatabase()
   try {

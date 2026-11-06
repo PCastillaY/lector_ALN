@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import { BookOpen, FilePlus2, FileText, HardDrive, LoaderCircle, Trash2, UploadCloud } from "lucide-react"
 import type { DocumentRecord, StoredDocument } from "@/lib/documents/types"
 import { validateDocumentFile } from "@/lib/documents/validation"
@@ -143,7 +144,7 @@ export function LibraryWorkspace() {
           <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
             <span className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-indigo-50 text-indigo-600"><UploadCloud size={26} /></span>
             <h3 className="text-lg font-semibold">Tu biblioteca está vacía</h3>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">Añade un EPUB, PDF, TXT, DOCX o MOBI para comenzar. En esta primera etapa guardamos el archivo; el visor y la narración se incorporarán en las siguientes fases.</p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">Añade un EPUB, PDF, TXT, DOCX o MOBI. La lectura está habilitada inicialmente para archivos TXT; los demás formatos se incorporarán mediante adaptadores independientes.</p>
             <button onClick={() => inputRef.current?.click()} className="mt-5 inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50"><FilePlus2 size={16} /> Seleccionar archivos</button>
           </div>
         ) : (
@@ -154,9 +155,16 @@ export function LibraryWorkspace() {
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate text-sm font-semibold">{document.title}</h3>
                   <p className="mt-1 text-xs text-slate-500">{formatLabels[document.format]} · {formatSize(document.sizeBytes)} · {new Date(document.importedAt).toLocaleDateString("es-PE")}</p>
-                  <p className="mt-1 text-xs text-amber-700">Importado · pendiente de procesamiento</p>
+                  <p className="mt-1 text-xs text-amber-700">{document.format === "txt" ? "TXT · listo para abrir" : "Importado · extracción pendiente"}</p>
                 </div>
-                <button onClick={() => void removeDocument(document)} disabled={deletingId !== null} className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50" aria-label={`Eliminar ${document.fileName}`} title="Eliminar"><Trash2 size={17} /></button>
+                <div className="flex shrink-0 items-center gap-2">
+                  {document.format === "txt" ? (
+                    <Link href={`/reader/${encodeURIComponent(document.id)}`} className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50">Abrir</Link>
+                  ) : (
+                    <span className="px-2 text-xs text-slate-400" aria-label="Extractor pendiente">Próximamente</span>
+                  )}
+                  <button onClick={() => void removeDocument(document)} disabled={deletingId !== null} className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50" aria-label={`Eliminar ${document.fileName}`} title="Eliminar"><Trash2 size={17} /></button>
+                </div>
               </article>
             ))}
           </div>

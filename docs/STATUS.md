@@ -1,17 +1,17 @@
 # Lector ALN — estado del proyecto
 
 > **Última actualización:** 2026-11-06  
-> **Rama de trabajo:** `feat/foundation-quality`  
+> **Rama de trabajo:** `feat/document-extraction-txt`  
 > **Pull Request:** en preparación, contra `main`.  
 > **Base integrada:** PR #1 fusionado; CI de la rama base completó instalación congelada, typecheck y build; Vercel reportó `success` para el commit de merge.  
-> **Estado de esta fase:** suite inicial aprobada en CI; instalación congelada, typecheck, tests y build completados correctamente. Vercel reportó `success`.  
+> **Estado de esta fase:** PR #1 y PR #2 integrados en `main`; extracción TXT y lector inicial en desarrollo, pendiente de CI y validación manual.  
 > **Criterio rector:** buscar excelencia verificable; no confundir una demo funcional con un producto terminado.
 
 Este documento es el registro operativo del proyecto. Debe actualizarse al cerrar tareas, descubrir riesgos, cambiar decisiones o incorporar nuevas propuestas. Los estados describen lo que está implementado, no lo que está meramente documentado.
 
 ## 1. Estado ejecutivo
 
-Lector ALN se encuentra en una **fase de endurecimiento de la fundación técnica**. La aplicación permite importar documentos y almacenarlos en IndexedDB, pero todavía no extrae ni presenta su contenido y no narra audio. La base integrada superó instalación congelada, typecheck y build; esta rama añade pruebas automatizadas iniciales para la validación documental.
+Lector ALN completó la fundación técnica y su endurecimiento de calidad mediante PR #1 y PR #2, ambos integrados en `main`. Esta rama inicia la lectura real con extracción TXT local y una primera vista de lectura. PDF, EPUB y DOCX todavía requieren sus adaptadores; no existe narración TTS.
 
 La arquitectura objetivo está definida como **local-first**, instalable como PWA y centrada en voces neuronales en español. La narración offline es un requisito de producto, no una promesa ya implementada.
 
@@ -29,7 +29,7 @@ La arquitectura objetivo está definida como **local-first**, instalable como PW
 - [x] Eliminada la opción que ocultaba errores de TypeScript durante el build.
 - [x] Arquitectura documentada con prioridad TTS local, voces españolas, PWA y cloud opcional.
 
-**Alcance real de la biblioteca:** importa y conserva archivos. No los abre, no valida todavía su estructura interna y no extrae texto. El estado mostrado como pendiente de procesamiento es correcto.
+**Alcance real de la biblioteca:** importa y conserva archivos. Esta rama añade extracción y lectura local para TXT. PDF, EPUB, DOCX y MOBI todavía no tienen adaptadores; no se deben presentar como formatos legibles hasta implementarlos.
 
 ## 3. Pendientes prioritarios
 
@@ -49,7 +49,7 @@ La arquitectura objetivo está definida como **local-first**, instalable como PW
 
 ### P1 — Convertir la biblioteca en un lector
 
-- [ ] Implementar extracción de TXT, PDF con capa de texto, DOCX y EPUB mediante adaptadores aislados.
+- [x] Implementar extracción TXT mediante un adaptador local UTF-8 y contrato común de contenido (esta rama; pendiente de CI y revisión manual).\n- [ ] Implementar extracción de PDF con capa de texto mediante PDF.js; requiere fijar dependencia y actualizar lockfile de forma reproducible.\n- [ ] Implementar extracción DOCX y EPUB mediante adaptadores aislados.
 - [ ] Evaluar MOBI por separado; no prometer compatibilidad hasta demostrar extracción fiable y revisar dependencias/licencias.
 - [ ] Detectar PDF sin capa de texto y explicar que OCR no está soportado.
 - [ ] Normalizar el resultado a `DocumentContent`, con secciones y bloques estables.
@@ -102,6 +102,17 @@ La arquitectura objetivo está definida como **local-first**, instalable como PW
 - [ ] Considerar OCR como módulo separado, con coste de CPU, privacidad y calidad medidos.
 - [ ] Considerar app de escritorio Tauri/Electron solo si la PWA no satisface las necesidades de almacenamiento o ejecución.
 
+## 12. Primer lector y extracción TXT — 2026-11-06
+
+- Se creó la rama `feat/document-extraction-txt` desde el commit integrado de PR #2; `main` permanece intacta.
+- Se incorpora recuperación individual de un documento almacenado en IndexedDB.
+- Se define un punto de entrada común `extractDocumentContent` y un adaptador TXT local basado en UTF-8 estricto.
+- La extracción conserva el texto visible y separa párrafos en bloques con offsets sobre el texto decodificado. Rechaza archivos vacíos, UTF-8 inválido y contenido con bytes NUL que sugieran un archivo binario.
+- Se añade una ruta de lectura para documentos TXT y se evita ofrecer la acción de abrir para formatos cuyo adaptador todavía no existe.
+- No se añade ninguna dependencia ni se modifica `pnpm-lock.yaml`.
+- **Pendiente de validación:** ejecutar typecheck, pruebas y build en Codespaces/CI; probar TXT con BOM, saltos de línea CRLF, párrafos largos, caracteres acentuados y UTF-8 inválido.
+- **Limitación deliberada:** PDF aún no se procesa. Se añadirá PDF.js como dependencia fijada en un PR posterior o continuación de esta rama, con actualización real del lockfile. No se usará un CDN como sustituto del parser.
+
 ## 4. Observaciones críticas y riesgos conocidos
 
 ### 4.1 La validación actual es preliminar
@@ -114,7 +125,7 @@ El límite por archivo no considera la cuota total disponible, los demás datos 
 Las funciones actuales cierran la conexión tras operaciones exitosas, pero deben garantizar su cierre también en errores. Faltan pruebas de cuota agotada, abortos, actualizaciones de esquema y concurrencia. La persistencia del navegador no equivale a una copia de seguridad.
 
 ### 4.4 La interfaz puede inducir expectativas superiores a la capacidad real
-La página presenta formatos admitidos y una biblioteca, pero aún no existe lectura. Debe mantener visible que el archivo solo está almacenado y que todavía no se ha procesado. No anunciar narración, soporte offline o sincronización como capacidades disponibles hasta superar pruebas de aceptación.
+La biblioteca ahora distingue TXT listo para abrir de otros formatos pendientes de extracción. No anunciar lectura de PDF/EPUB/DOCX/MOBI, narración, soporte offline o sincronización como capacidades disponibles hasta superar pruebas de aceptación.
 
 ### 4.5 El objetivo de voces españolas aún no está resuelto
 Kokoro es candidato, no decisión final. La presencia de voces etiquetadas como español no garantiza acento latinoamericano, prosodia de audiolibro ni pronunciación correcta. Piper tampoco debe asumirse como mejor sin comparar runtime, calidad, tamaño y licencias.
@@ -123,7 +134,7 @@ Kokoro es candidato, no decisión final. La presencia de voces etiquetadas como 
 Una PWA instalable no garantiza que el modelo neural quepa en memoria, que WebGPU funcione o que el navegador conserve los archivos. Se debe demostrar el flujo completo en dispositivos objetivo, incluidos fallos y recuperación.
 
 ### 4.7 Evidencia automatizada parcial
-La base integrada ya pasó instalación congelada, typecheck y build en CI, y Vercel reportó un despliegue correcto. Esta rama incorpora pruebas iniciales para la validación de extensiones, tamaño y firmas de TXT/PDF/ZIP/MOBI. Aún falta lint y pruebas de comportamiento de IndexedDB en navegador. No se debe interpretar la suite inicial como cobertura completa de importación ni persistencia.
+La base integrada ya pasó instalación congelada, typecheck y build en CI, y Vercel reportó un despliegue correcto. La base integrada incorpora pruebas iniciales para la validación de extensiones, tamaño y firmas de TXT/PDF/ZIP/MOBI. La rama actual añade pruebas unitarias de extracción TXT. Aún falta lint y pruebas de comportamiento de IndexedDB en navegador. No se debe interpretar la suite inicial como cobertura completa de importación ni persistencia.
 
 ### 4.8 El alcance es amplio
 Cinco formatos, extracción, biblioteca dual, PWA, TTS neural local, catálogo de voces, cloud y sincronización son un alcance considerable. Intentar desarrollarlo todo en paralelo aumenta el riesgo de una arquitectura compleja sin un flujo de lectura sólido. La secuencia debe priorizar un recorrido vertical funcional: importar → extraer → leer → narrar localmente → continuar offline.
@@ -225,3 +236,15 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 - **Pendiente:** lint. Next.js 16 no debe configurarse con el antiguo comando `next lint`; se evaluará una configuración ESLint compatible y se regenerará el lockfile de forma reproducible si se justifica incorporar dependencias.
 - **Pendiente:** validación estructural ZIP para EPUB/DOCX, incluida inspección de entradas obligatorias; la firma ZIP actual no garantiza que el archivo sea un EPUB o DOCX válido.
 - **Pendiente:** consulta de cuota y manejo explícito de `QuotaExceededError` en la experiencia de importación.
+
+
+## 12. Primer lector y extracción TXT — 2026-11-06
+
+- Se creó la rama `feat/document-extraction-txt` desde el commit integrado de PR #2; `main` permanece intacta.
+- Se incorpora recuperación individual de un documento almacenado en IndexedDB.
+- Se define un punto de entrada común `extractDocumentContent` y un adaptador TXT local basado en UTF-8 estricto.
+- La extracción conserva el texto visible y separa párrafos en bloques con offsets sobre el texto decodificado. Rechaza archivos vacíos, UTF-8 inválido y contenido con bytes NUL que sugieran un archivo binario.
+- Se añade una ruta de lectura para documentos TXT y se evita ofrecer la acción de abrir para formatos cuyo adaptador todavía no existe.
+- No se añade ninguna dependencia ni se modifica `pnpm-lock.yaml`.
+- **Pendiente de validación:** ejecutar typecheck, pruebas y build en Codespaces/CI; probar TXT con BOM, saltos de línea CRLF, párrafos largos, caracteres acentuados y UTF-8 inválido.
+- **Limitación deliberada:** PDF aún no se procesa. Se añadirá PDF.js como dependencia fijada en un PR posterior o continuación de esta rama, con actualización real del lockfile. No se usará un CDN como sustituto del parser.
