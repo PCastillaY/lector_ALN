@@ -21,10 +21,19 @@ async function hasExpectedSignature(file: File, format: DocumentFormat): Promise
   }
 
   if (format === "mobi") {
-    const header = new Uint8Array(await file.slice(60, 68).arrayBuffer())
-    return new TextDecoder("ascii").decode(header) === "BOOKMOBI"
+    // Palm database header: first record offset is stored at byte 78.
+    const palmHeader = new Uint8Array(await file.slice(0, 82).arrayBuffer())
+    if (palmHeader.length < 82) return false
+
+    const firstRecordOffset = new DataView(palmHeader.buffer, palmHeader.byteOffset, palmHeader.byteLength).getUint32(78, false)
+    if (firstRecordOffset + 20 > file.size) return false
+
+    // The MOBI identifier follows the 16-byte PalmDOC header in record 0.
+    const mobiIdentifier = new Uint8Array(await file.slice(firstRecordOffset + 16, firstRecordOffset + 20).arrayBuffer())
+    return new TextDecoder("ascii").decode(mobiIdentifier) === "MOBI"
   }
 
+  // EPUB and DOCX are ZIP containers; this does not yet validate their internal structure.
   const header = new Uint8Array(await file.slice(0, 4).arrayBuffer())
   return ZIP_SIGNATURES.some((signature) => startsWithBytes(header, signature))
 }
