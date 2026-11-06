@@ -35,10 +35,11 @@ try {
   ])
 
   if (compiled) {
-    run(process.execPath, ["--test", path.join(root, "tests/document-validation.test.cjs")], {
+    const tested = run(process.execPath, ["--test", path.join(root, "tests/document-validation.test.cjs")], {
       ...process.env,
       LECTOR_TEST_BUILD: tempDir,
     })
+    if (!tested) process.exitCode = 1
   } else {
     process.exitCode = 1
   }
