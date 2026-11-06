@@ -25,6 +25,7 @@ export function LibraryWorkspace() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState("")
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -46,7 +47,7 @@ export function LibraryWorkspace() {
     const errors: string[] = []
 
     for (const file of Array.from(files)) {
-      const validation = validateDocumentFile(file)
+      const validation = await validateDocumentFile(file)
       if (!validation.valid || !validation.format) {
         errors.push(`${file.name}: ${validation.error}`)
         continue
@@ -82,9 +83,18 @@ export function LibraryWorkspace() {
   }
 
   async function removeDocument(document: DocumentRecord) {
-    if (!window.confirm(`¿Eliminar "${document.fileName}" de este dispositivo?`)) return
-    await deleteLocalDocument(document.id)
-    await refresh()
+    if (deletingId || !window.confirm(`¿Eliminar "${document.fileName}" de este dispositivo?`)) return
+    setDeletingId(document.id)
+    setMessage("")
+    try {
+      await deleteLocalDocument(document.id)
+      await refresh()
+      setMessage(`"${document.fileName}" se eliminó de este dispositivo.`)
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo eliminar el documento.")
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -146,7 +156,7 @@ export function LibraryWorkspace() {
                   <p className="mt-1 text-xs text-slate-500">{formatLabels[document.format]} · {formatSize(document.sizeBytes)} · {new Date(document.importedAt).toLocaleDateString("es-PE")}</p>
                   <p className="mt-1 text-xs text-amber-700">Importado · pendiente de procesamiento</p>
                 </div>
-                <button onClick={() => void removeDocument(document)} className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600" aria-label={`Eliminar ${document.fileName}`} title="Eliminar"><Trash2 size={17} /></button>
+                <button onClick={() => void removeDocument(document)} disabled={deletingId !== null} className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50" aria-label={`Eliminar ${document.fileName}`} title="Eliminar"><Trash2 size={17} /></button>
               </article>
             ))}
           </div>
