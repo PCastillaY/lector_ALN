@@ -248,3 +248,15 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 - No se añade ninguna dependencia ni se modifica `pnpm-lock.yaml`.
 - **Pendiente de validación:** ejecutar typecheck, pruebas y build en Codespaces/CI; probar TXT con BOM, saltos de línea CRLF, párrafos largos, caracteres acentuados y UTF-8 inválido.
 - **Limitación deliberada:** PDF aún no se procesa. Se añadirá PDF.js como dependencia fijada en un PR posterior o continuación de esta rama, con actualización real del lockfile. No se usará un CDN como sustituto del parser.
+
+
+## 13. Extracción PDF local con PDF.js — 2026-11-06
+
+- Se fijó `pdfjs-dist@6.5.438` en `package.json` y `pnpm-lock.yaml`; el lockfile fue generado por pnpm en Codespaces.
+- Se implementó un adaptador PDF.js que extrae texto página por página en el navegador, sin enviar el documento a un servidor ni depender de un CDN.
+- Cada página con texto se representa como una sección independiente; los offsets se acumulan sobre el texto normalizado extraído.
+- El worker se copia desde la dependencia instalada a `public/pdf.worker.min.mjs` al ejecutar `pnpm dev` o `pnpm build`. El artefacto generado queda fuera de Git y se sirve desde el mismo origen.
+- Se añadieron pruebas unitarias con un PDF.js simulado para validar páginas, offsets, páginas sin texto, PDF sin capa textual, contraseña y liberación de recursos.
+- La biblioteca permite abrir TXT y PDF. La extracción de PDF escaneados/OCR, PDFs protegidos con contraseña y extracción avanzada de estructura/columnas/tablas no está soportada.
+- **Pendiente de validación:** CI, typecheck y build con la dependencia real; prueba manual en Codespaces con PDF digital de varias páginas, PDF escaneado, PDF protegido y archivo corrupto; comprobar que `/pdf.worker.min.mjs` responde correctamente y que la extracción funciona sin enviar archivos fuera del navegador.
+- No marcar esta fase como validada ni fusionar hasta superar las verificaciones automatizadas y manuales.

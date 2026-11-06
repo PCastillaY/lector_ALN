@@ -5,6 +5,10 @@ export async function extractDocumentContent(document: StoredDocument): Promise<
   switch (document.format) {
     case "txt":
       return extractPlainTextDocument(document)
+    case "pdf": {
+      const { extractPdfDocument } = await import("./extraction/pdf")
+      return extractPdfDocument(document)
+    }
     default:
       throw new Error(`La extracción de ${document.format.toUpperCase()} todavía no está disponible.`)
   }
