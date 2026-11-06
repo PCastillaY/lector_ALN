@@ -74,7 +74,7 @@ export function ReaderWorkspace({ documentId }: ReaderWorkspaceProps) {
             <div className="space-y-8 rounded-2xl border border-slate-200 bg-white p-6 text-base leading-8 shadow-sm sm:p-10">
               {content.sections.map(section => (
                 <section key={section.id} aria-label={section.title}>
-                  {format === "pdf" && (
+                  {(format === "pdf" || format === "epub") && (
                     <h2 className="mb-4 border-b border-slate-100 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       {section.title}
                     </h2>
