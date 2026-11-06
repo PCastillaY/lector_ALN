@@ -3,7 +3,7 @@
 > **Última actualización:** 2026-11-06  
 > **Rama de trabajo:** `feat/lector-foundation`  
 > **Pull Request:** [#1 — Fundamentos de Lector ALN](https://github.com/PCastillaY/lector_ALN/pull/1)  
-> **Estado del PR:** abierto, Draft; GitHub reportó `mergeable: false` en la última revisión.  
+> **Estado del PR:** abierto, Draft; la rama está 15 commits por delante de `main` y 0 por detrás. La última comprobación de Vercel quedó `pending`; una comprobación anterior reportó `failure`.  
 > **Criterio rector:** buscar excelencia verificable; no confundir una demo funcional con un producto terminado.
 
 Este documento es el registro operativo del proyecto. Debe actualizarse al cerrar tareas, descubrir riesgos, cambiar decisiones o incorporar nuevas propuestas. Los estados describen lo que está implementado, no lo que está meramente documentado.
@@ -34,14 +34,14 @@ La arquitectura objetivo está definida como **local-first**, instalable como PW
 
 ### P0 — Bloqueantes de calidad y fiabilidad
 
-- [ ] Ejecutar instalación reproducible con el lockfile existente y registrar versiones/entorno.
-- [ ] Ejecutar `pnpm build`; corregir todos los errores TypeScript y de compilación.
-- [ ] Añadir scripts y configuración de lint y pruebas automatizadas.
+- [ ] Ejecutar instalación reproducible con el lockfile existente y registrar versiones/entorno. Se añadió CI con `pnpm install --frozen-lockfile`; primera ejecución aún no observada.
+- [ ] Ejecutar `pnpm build`; corregir todos los errores TypeScript y de compilación. El workflow ejecutará build y typecheck, pero no hay resultado confirmado todavía.
+- [ ] Añadir lint y pruebas automatizadas. Ya existe script `typecheck` y workflow de CI para typecheck/build; aún no se han incorporado linter ni tests.
 - [ ] Probar IndexedDB en navegadores objetivo, incluyendo cierre/reapertura, archivos grandes, cuota agotada y errores de transacción.
-- [ ] Cerrar conexiones IndexedDB también cuando una operación falla; actualmente las rutas de error pueden dejar conexiones abiertas.
-- [ ] Añadir manejo de errores visible al eliminar documentos; la acción actual no captura fallos ni informa al usuario.
+- [x] Corregido en código: cerrar conexiones IndexedDB en `finally`, cerrar conexiones tardías tras aperturas bloqueadas y manejar abortos de transacción. Pendiente de pruebas en navegador.
+- [x] Corregido en código: la eliminación captura errores, informa el resultado y bloquea acciones concurrentes. Pendiente de prueba manual.
 - [ ] Comprobar cuota disponible antes de importaciones grandes y manejar explícitamente `QuotaExceededError`.
-- [ ] Fortalecer la validación: extensión y MIME declarado no demuestran el formato real. Incorporar inspección de firma/estructura y pruebas con archivos malformados o renombrados.
+- [x] Añadida inspección preliminar de firma: PDF, contenedor ZIP para EPUB/DOCX y cabecera Palm/MOBI; TXT sigue sin firma verificable. **No equivale a validar la estructura interna**. Pendientes pruebas con corpus real y archivos malformados.
 - [ ] Definir una política de privacidad y retención clara para archivos locales; nunca enviar documentos a servicios remotos sin consentimiento explícito.
 
 ### P1 — Convertir la biblioteca en un lector
@@ -102,7 +102,7 @@ La arquitectura objetivo está definida como **local-first**, instalable como PW
 ## 4. Observaciones críticas y riesgos conocidos
 
 ### 4.1 La validación actual es preliminar
-La función de importación valida extensión y el MIME informado por el navegador, pero permite tipos genéricos como `application/octet-stream`. Esto mejora compatibilidad, pero no demuestra que el contenido sea un EPUB, PDF o DOCX válido. Un archivo renombrado o malformado puede superar la validación. La inspección de estructura debe ocurrir antes de procesar/renderizar.
+La función ahora inspecciona firmas básicas: cabecera PDF, contenedor ZIP para EPUB/DOCX y estructura Palm/MOBI. EPUB y DOCX comparten contenedor ZIP, por lo que todavía no se inspeccionan `mimetype`, `META-INF/container.xml`, `[Content_Types].xml` ni `word/document.xml`. TXT no tiene una firma fiable y no se valida su codificación. Un ZIP arbitrario todavía puede pasar como EPUB/DOCX. La inspección estructural debe ocurrir antes de procesar/renderizar.
 
 ### 4.2 El límite de 100 MB no es una garantía de almacenamiento
 El límite por archivo no considera la cuota total disponible, los demás datos del origen ni el coste de conservar simultáneamente libros y modelos TTS. La aplicación debe anticipar falta de espacio y ofrecer errores recuperables.
@@ -173,3 +173,25 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 - Añadir problemas concretos con impacto, prioridad y criterio de cierre; evitar listas vagas como “mejorar rendimiento”.
 - Cada nueva función debe justificar su valor y no degradar privacidad, funcionamiento offline, accesibilidad, estabilidad ni mantenibilidad.
 - Revisar este documento al cerrar cada fase y antes de fusionar un Pull Request.
+
+
+## 9. Auditoría inicial e implementación de endurecimiento — 2026-11-06
+
+- Rama `feat/lector-foundation`: 15 commits por delante de `main`, 0 por detrás; no se modificó `main`.
+- Se corrigió el cierre de conexiones IndexedDB en rutas de éxito y error. También se cierra una conexión que llegue tarde después de que una apertura haya sido rechazada por bloqueo.
+- Se añadió manejo de abortos de transacción y cierre por cambio de versión.
+- La UI ahora informa fallos y confirmaciones al eliminar documentos, y evita iniciar eliminaciones simultáneas.
+- La validación ahora es asíncrona e inspecciona firmas básicas para PDF, ZIP y MOBI. No se debe presentar como validación completa de EPUB/DOCX ni como análisis antimalware.
+- Se añadió el script `pnpm typecheck` sin introducir dependencias ni alterar `pnpm-lock.yaml`.
+- Se añadió `.github/workflows/ci.yml` para instalar con lockfile congelado, ejecutar TypeScript y compilar en Node 22. La ejecución de CI aún no está confirmada.
+- El último estado consultado de Vercel quedó pendiente; un estado anterior del mismo PR fue `failure`. El motivo del fallo anterior no está disponible en el contexto actual y debe investigarse desde los logs de despliegue.
+- No se ejecutaron build, lint, tests ni pruebas de navegador desde este entorno. Los cambios anteriores son **implementados, todavía no validados**.
+
+### Riesgos que siguen abiertos tras esta iteración
+
+1. Verificar que la CI se dispare y que el lockfile congelado sea compatible con pnpm 12.3.4.
+2. Obtener logs del despliegue Vercel y resolver el estado fallido anterior.
+3. Añadir pruebas automatizadas para validación de archivos y persistencia IndexedDB.
+4. Validar internamente EPUB/DOCX con un lector ZIP seguro; las firmas actuales solo confirman que parecen archivos ZIP.
+5. Revisar cuota disponible y manejo de `QuotaExceededError` antes de importar lotes o archivos grandes.
+6. Añadir lint sin introducir dependencias innecesarias y con configuración compatible con Next.js 16.
