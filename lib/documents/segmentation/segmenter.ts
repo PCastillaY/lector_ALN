@@ -85,35 +85,52 @@ function compatibleMarkerCategories(left: string | null, right: string | null): 
     right === "ambiguous" && (left === "roman" || left === "alpha")
 }
 
-function isListMarker(text: string, periodIndex: number): boolean {
-  const lineStart = text.lastIndexOf("\n", periodIndex - 1) + 1
-  const lineEndIndex = text.indexOf("\n", periodIndex)
-  const lineEnd = lineEndIndex === -1 ? text.length : lineEndIndex
-  const line = text.slice(lineStart, lineEnd)
-  const linePrefix = text.slice(lineStart, periodIndex).trim()
+function findListMarkerPeriods(text: string): Set<number> {
+  const lines: Array<{
+    start: number
+    category: string | null
+    periodIndex: number | null
+  }> = []
+  let lineStart = 0
 
-  if (!/^(?:\d+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)$/u.test(linePrefix)) return false
+  while (lineStart <= text.length) {
+    const lineEndIndex = text.indexOf("\n", lineStart)
+    const lineEnd = lineEndIndex === -1 ? text.length : lineEndIndex
+    const line = text.slice(lineStart, lineEnd)
+    const markerMatch = line.match(/^\s*(?:\d+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\./u)
+    const category = listMarkerCategory(line)
 
-  // A marker is treated as a list item only when a neighboring line confirms
-  // the same marker family. This avoids swallowing sentence initials such as "A.".
-  const lines = text.split("\n")
-  const lineIndex = text.slice(0, lineStart).split("\n").length - 1
-  const category = listMarkerCategory(line)
-  if (!category) return false
+    lines.push({
+      start: lineStart,
+      category,
+      periodIndex: markerMatch ? lineStart + markerMatch[0].length - 1 : null,
+    })
 
-  const previousCategory = lineIndex > 0
-    ? listMarkerCategory(lines[lineIndex - 1])
-    : null
-  const nextCategory = lineIndex + 1 < lines.length
-    ? listMarkerCategory(lines[lineIndex + 1])
-    : null
+    if (lineEndIndex === -1) break
+    lineStart = lineEndIndex + 1
+  }
 
-  return compatibleMarkerCategories(previousCategory, category) ||
-    compatibleMarkerCategories(category, nextCategory)
+  const periods = new Set<number>()
+  for (const [index, line] of lines.entries()) {
+    if (!line.category || line.periodIndex === null) continue
+
+    const previousCategory = index > 0 ? lines[index - 1].category : null
+    const nextCategory = index + 1 < lines.length ? lines[index + 1].category : null
+
+    if (
+      compatibleMarkerCategories(previousCategory, line.category) ||
+      compatibleMarkerCategories(line.category, nextCategory)
+    ) {
+      periods.add(line.periodIndex)
+    }
+  }
+
+  return periods
 }
 
 function sentenceBoundaries(text: string): number[] {
   const boundaries: number[] = []
+  const listMarkerPeriods = findListMarkerPeriods(text)
   const punctuation = /[.!?…]+[”’»"')\]]*/gu
   let match: RegExpExecArray | null
 
@@ -127,7 +144,7 @@ function sentenceBoundaries(text: string): number[] {
     const lastPunctuation = match[0][0]
     if (lastPunctuation === "." && (
       isAbbreviation(text, match.index, following) ||
-      isListMarker(text, match.index) ||
+      listMarkerPeriods.has(match.index) ||
       /\d$/u.test(text.slice(0, match.index)) && /^\d/u.test(following)
     )) continue
 
