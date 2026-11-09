@@ -9,7 +9,7 @@ const COMMON_SENTENCE_STARTERS = new Set([
   "en", "entonces", "esa", "esas", "ese", "eso", "esos", "esta", "está",
   "estas", "este", "esto", "estos", "finalmente", "hoy", "la", "las", "luego",
   "mañana", "mientras", "no", "o", "para", "pero", "por", "porque", "primero",
-  "primera", "primero", "se", "según", "si", "sin", "su", "sus", "también",
+  "primera", "se", "según", "si", "sin", "su", "sus", "también",
   "tampoco", "tras", "un", "una", "unas", "unos", "ya",
 ])
 
