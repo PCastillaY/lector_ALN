@@ -76,7 +76,7 @@ function splitOversized(
 
     // Prefer the last whitespace within the preferred limit.
     for (let index = hardLimit; index > cursor; index -= 1) {
-      if (/\\s/u.test(text[index - 1])) {
+      if (/\s/u.test(text[index - 1])) {
         splitAt = index
         break
       }
@@ -84,7 +84,7 @@ function splitOversized(
 
     // If no whitespace exists before the limit, extend to the next word boundary.
     if (splitAt <= cursor) {
-      const whitespace = /\\s/u.exec(text.slice(hardLimit, end))
+      const whitespace = /\s/u.exec(text.slice(hardLimit, end))
       splitAt = whitespace ? hardLimit + whitespace.index + whitespace[0].length : end
     }
 
