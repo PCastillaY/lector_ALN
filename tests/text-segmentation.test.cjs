@@ -147,9 +147,9 @@ test("distingue una inicial de oración de una lista alfabética", () => {
   assert.equal(result.map((segment) => segment.text).join(""), source)
   assert.deepEqual(result.map((segment) => segment.text), [
     "A. ",
-    "Es la respuesta correcta.\\n",
-    "Luego veremos la justificación.\\n\\n",
-    "Opciones:\\nA. Primera opción\\nB. Segunda opción\\nC. Tercera opción",
+    "Es la respuesta correcta.\n",
+    "Luego veremos la justificación.\n\n",
+    "Opciones:\nA. Primera opción\nB. Segunda opción\nC. Tercera opción",
   ])
 })
 
