@@ -244,12 +244,13 @@ test("conserva signos de cierre anidados y puntuación de diálogo", () => {
 })
 
 test("reconoce iniciales únicas antes de apellidos", () => {
-  const source = "El informe fue revisado por M. Vargas. A continuación, se publicó."
+  const source = "El informe fue revisado por M. Vargas y M. de la Cruz. También citó a M. Del Toro. A continuación, se publicó."
   const result = segmentDocument(makeDocument([source]))
 
   assert.equal(result.map((segment) => segment.text).join(""), source)
   assert.deepEqual(result.map((segment) => segment.text), [
-    "El informe fue revisado por M. Vargas. ",
+    "El informe fue revisado por M. Vargas y M. de la Cruz. ",
+    "También citó a M. Del Toro. ",
     "A continuación, se publicó.",
   ])
 })
