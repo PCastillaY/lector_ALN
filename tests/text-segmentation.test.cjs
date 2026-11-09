@@ -128,6 +128,31 @@ test("conserva saltos de línea dentro de una oración y separa las siguientes",
   ])
 })
 
+test("reconoce etc. como cierre de oración solo ante un nuevo inicio", () => {
+  const source = "Incluye libros, revistas, etc. Luego continúa la explicación. También incluye mapas, etc. y otros recursos."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "Incluye libros, revistas, etc. ",
+    "Luego continúa la explicación. ",
+    "También incluye mapas, etc. y otros recursos.",
+  ])
+})
+
+test("distingue una inicial de oración de una lista alfabética", () => {
+  const source = "A. Es la respuesta correcta.\\nLuego veremos la justificación.\\n\\nOpciones:\\nA. Primera opción\\nB. Segunda opción\\nC. Tercera opción"
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "A. ",
+    "Es la respuesta correcta.\\n",
+    "Luego veremos la justificación.\\n\\n",
+    "Opciones:\\nA. Primera opción\\nB. Segunda opción\\nC. Tercera opción",
+  ])
+})
+
 test("mantiene offsets UTF-16 exactos con caracteres suplementarios", () => {
   const source = "😀 Inicio. Fin."
   const blockStart = 1000
