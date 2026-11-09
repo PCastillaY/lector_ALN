@@ -49,12 +49,12 @@ function isAbbreviation(
     const context = text.slice(0, periodIndex + 1) + (following ? ` ${following}` : "")
     const nameInitials = /(?:^|\s)(?:\p{Lu}\.\s+){2,3}\p{Lu}\p{Ll}+/u
     const previousInitial = /(?:^|\s)\p{Lu}\.\s*$/u.test(prefixBeforeWord)
-    const nextWord = nextToken.match(/^[\\p{L}]+/u)?.[0].toLocaleLowerCase("es")
+    const nextWord = nextToken.match(/^[\p{L}]+/u)?.[0].toLocaleLowerCase("es")
     const startsNewSentence = nextWord !== undefined && COMMON_SENTENCE_STARTERS.has(nextWord)
 
     return (!startsNewSentence && nameInitials.test(context)) ||
-      (previousInitial && !/^\\p{Lu}/u.test(nextToken)) ||
-      !/^\\p{Lu}/u.test(nextToken)
+      (previousInitial && !/^\p{Lu}/u.test(nextToken)) ||
+      !/^\p{Lu}/u.test(nextToken)
   }
 
   if (ABBREVIATIONS.has(word)) return true
