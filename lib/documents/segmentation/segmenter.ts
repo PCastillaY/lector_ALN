@@ -21,6 +21,12 @@ function isAbbreviation(text: string, periodIndex: number): boolean {
   return word.length === 1 && /\p{Lu}/u.test(match[1])
 }
 
+function isListMarker(text: string, periodIndex: number): boolean {
+  const lineStart = text.lastIndexOf("\n", periodIndex - 1) + 1
+  const linePrefix = text.slice(lineStart, periodIndex).trim()
+  return /^(?:\d+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)$/u.test(linePrefix)
+}
+
 function sentenceBoundaries(text: string): number[] {
   const boundaries: number[] = []
   const punctuation = /[.!?…]+[”’»"')\]]*/gu
@@ -35,6 +41,7 @@ function sentenceBoundaries(text: string): number[] {
     const lastPunctuation = match[0][0]
     if (lastPunctuation === "." && (
       isAbbreviation(text, match.index) ||
+      isListMarker(text, match.index) ||
       /\d$/u.test(text.slice(0, match.index)) && /^\d/u.test(next.trimStart())
     )) continue
 
@@ -44,8 +51,9 @@ function sentenceBoundaries(text: string): number[] {
       continue
     }
 
-    // Avoid splitting ellipses used as a hesitation when the next token is lowercase.
-    if (match[0].includes("…") && /^\p{Ll}/u.test(following)) continue
+    // Avoid splitting Unicode and ASCII ellipses used as a hesitation before lowercase text.
+    const isEllipsis = match[0].includes("…") || match[0].startsWith("...")
+    if (isEllipsis && /^\p{Ll}/u.test(following)) continue
 
     boundaries.push(end + whitespace[0].length)
   }
