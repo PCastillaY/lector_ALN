@@ -131,7 +131,19 @@ test("conserva saltos de línea dentro de una oración y separa las siguientes",
 test("mantiene offsets UTF-16 exactos con caracteres suplementarios", () => {
   const source = "😀 Inicio. Fin."
   const blockStart = 1000
-  const result = segmentDocument(makeDocument([source]))
+  const document = {
+    sections: [{
+      id: "unicode",
+      title: "Unicode",
+      blocks: [{
+        id: "unicode-1",
+        text: source,
+        startOffset: blockStart,
+        endOffset: blockStart + source.length,
+      }],
+    }],
+  }
+  const result = segmentDocument(document)
 
   assert.equal(result.map((segment) => segment.text).join(""), source)
   for (const segment of result) {
