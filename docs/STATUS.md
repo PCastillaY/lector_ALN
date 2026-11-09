@@ -1,6 +1,6 @@
 # Lector ALN — estado del proyecto
 
-> **Última actualización:** 2026-11-06  
+> **Última actualización:** 2026-11-09  
 > **Rama de trabajo vigente:** `feat/text-segmentation` (basada en `main`)  
 > **Último PR integrado:** PR #5 — extracción EPUB local (Squash and merge).  
 > **Commit de PR #5:** `b29cfc4f769ab66921adefb6fe458605d396efaf`  
@@ -34,6 +34,8 @@ La ruta **importar → extraer → leer** está implementada para los tres forma
 ### Fase en curso: segmentación de texto
 
 La rama `feat/text-segmentation` se creó desde el último commit de `main`. El objetivo es implementar una capa independiente que transforme el contenido normalizado en segmentos adecuados para narración futura, sin integrar todavía un motor TTS.
+
+**Validación incremental (2026-11-09):** el usuario confirmó en Codespaces que `pnpm typecheck`, `pnpm test` (37/37) y `pnpm build` pasan en el commit `b145d5f6f2514c4191afe2ffafb96fb8e5c7874d`. Después se añadieron cinco pruebas adicionales y ajustes heurísticos para puntos suspensivos ASCII, enumeraciones y conservación de offsets UTF-16. Estos últimos cambios aún están pendientes de ejecución y revisión; la fase sigue abierta y no autoriza integrar TTS ni fusionar la rama.
 
 **Implementación inicial en la rama:** contrato `TextSegment`, segmentador por bloques/oraciones, referencias a sección y bloque, orden global y partición por longitud preferida. La salida conserva cada fragmento como un slice exacto del bloque original. Los offsets se calculan sumando el índice UTF-16 local al offset inicial del bloque; no se presupone que TXT, PDF y EPUB compartan una única cadena fuente global. La implementación y sus pruebas aún deben superar typecheck, suite completa, build y revisión de casos límite.
 
