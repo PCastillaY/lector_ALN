@@ -60,7 +60,7 @@ function listMarkerCategory(line: string): string | null {
   const marker = match[1]
   if (/^\d+$/u.test(marker)) return "numeric"
   if (marker.length > 1) return "roman"
-  if (/^[ivx]$/iu.test(marker)) return "ambiguous"
+  if (/^[ivxlcdm]$/iu.test(marker)) return "ambiguous"
   return "alpha"
 }
 
