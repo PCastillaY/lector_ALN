@@ -179,3 +179,66 @@ test("mantiene offsets UTF-16 exactos con caracteres suplementarios", () => {
   }
 })
 
+test("reconoce abreviaturas compuestas sin cortar su interior", () => {
+  const source = "La sede está en EE. UU. y la empresa es S. A. El manual explica, p. ej. cómo proceder. Después continúa."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "La sede está en EE. UU. y la empresa es S. A. El manual explica, p. ej. cómo proceder. ",
+    "Después continúa.",
+  ])
+})
+
+test("permite cerrar oración después de abreviaturas compuestas", () => {
+  const source = "La reunión será en EE. UU. Luego viajaremos. La entidad es S. A. Después veremos el contrato. Usa p. ej. este formato."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "La reunión será en EE. UU. ",
+    "Luego viajaremos. ",
+    "La entidad es S. A. ",
+    "Después veremos el contrato. ",
+    "Usa p. ej. este formato.",
+  ])
+})
+
+test("reconoce enumeraciones romanas con marcadores ambiguos de una letra", () => {
+  const source = "Apartados:\nI. Introducción\nII. Desarrollo\nIII. Conclusión\nFin."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.equal(result.length, 1)
+})
+
+test("mantiene títulos y párrafos en sus bloques de origen", () => {
+  const document = {
+    sections: [{
+      id: "chapter",
+      title: "Capítulo I",
+      blocks: [
+        { id: "heading", text: "Capítulo I. Fundamentos", startOffset: 0, endOffset: 24 },
+        { id: "paragraph", text: "Este es el primer párrafo. Este es el segundo.", startOffset: 30, endOffset: 77 },
+      ],
+    }],
+  }
+  const result = segmentDocument(document)
+
+  assert.deepEqual(result.map((segment) => segment.sourceBlockId), [
+    "heading",
+      "paragraph",
+      "paragraph",
+  ])
+  assert.equal(result.map((segment) => segment.text).join(""), "Capítulo I. FundamentosEste es el primer párrafo. Este es el segundo.")
+})
+
+test("conserva signos de cierre anidados y puntuación de diálogo", () => {
+  const source = "Ella preguntó: «¿Vendrás mañana (si puedes)?». Él respondió: —Sí, claro—. Luego se despidieron."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.equal(result.length, 3)
+  assert.match(result[0].text, /¿Vendrás mañana \(si puedes\)\?/)
+  assert.match(result[1].text, /Sí, claro/)
+})
