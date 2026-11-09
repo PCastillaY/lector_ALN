@@ -56,32 +56,36 @@ function sentenceBoundaries(text: string): number[] {
   return [...new Set(boundaries)].filter((value) => value > 0)
 }
 
-function splitOversized(text: string, start: number, maxLength: number): Array<{ start: number; end: number }> {
+function splitOversized(
+  text: string,
+  start: number,
+  end: number,
+  maxLength: number,
+): Array<{ start: number; end: number }> {
   const ranges: Array<{ start: number; end: number }> = []
   let cursor = start
 
-  while (cursor < text.length) {
-    const remaining = text.length - cursor
-    if (remaining <= maxLength) {
-      ranges.push({ start: cursor, end: text.length })
+  while (cursor < end) {
+    if (end - cursor <= maxLength) {
+      ranges.push({ start: cursor, end })
       break
     }
 
     const hardLimit = cursor + maxLength
     let splitAt = -1
+
+    // Prefer the last whitespace within the preferred limit.
     for (let index = hardLimit; index > cursor; index -= 1) {
-      if (/\s/u.test(text[index - 1])) {
+      if (/\\s/u.test(text[index - 1])) {
         splitAt = index
         break
       }
     }
 
-    // If one unbroken token exceeds the limit, preserve it rather than cutting a word.
+    // If no whitespace exists before the limit, extend to the next word boundary.
     if (splitAt <= cursor) {
-      const nextWhitespace = text.indexOf(" ", hardLimit)
-      const nextLineBreak = text.indexOf("\n", hardLimit)
-      const candidates = [nextWhitespace, nextLineBreak].filter((value) => value >= 0)
-      splitAt = candidates.length ? Math.min(...candidates) + 1 : text.length
+      const whitespace = /\\s/u.exec(text.slice(hardLimit, end))
+      splitAt = whitespace ? hardLimit + whitespace.index + whitespace[0].length : end
     }
 
     ranges.push({ start: cursor, end: splitAt })
@@ -105,7 +109,7 @@ function segmentBlock(
   let sentenceStart = 0
 
   for (const sentenceEnd of sentences) {
-    ranges.push(...splitOversized(block.text.slice(sentenceStart, sentenceEnd), sentenceStart, maxLength))
+    ranges.push(...splitOversized(block.text, sentenceStart, sentenceEnd, maxLength))
     sentenceStart = sentenceEnd
   }
 
