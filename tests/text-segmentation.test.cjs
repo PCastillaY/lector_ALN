@@ -255,7 +255,7 @@ test("reconoce iniciales únicas antes de apellidos", () => {
 })
 
 test("cierra abreviaturas societarias antes de determinantes de una nueva oración", () => {
-  const source = "La entidad es S. A. El contrato está vigente. La filial es S. R. L. La actividad continúa."
+  const source = "La entidad es S. A. El contrato está vigente. La filial es S. R. L. La actividad continúa. La sociedad es S. L. Es responsable de sus obligaciones."
   const result = segmentDocument(makeDocument([source]))
 
   assert.equal(result.map((segment) => segment.text).join(""), source)
@@ -263,7 +263,9 @@ test("cierra abreviaturas societarias antes de determinantes de una nueva oraci�
     "La entidad es S. A. ",
     "El contrato está vigente. ",
     "La filial es S. R. L. ",
-    "La actividad continúa.",
+    "La actividad continúa. ",
+    "La sociedad es S. L. ",
+    "Es responsable de sus obligaciones.",
   ])
 })
 
