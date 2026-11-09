@@ -280,3 +280,33 @@ test("mantiene abreviaturas editoriales junto a cifras", () => {
   ])
 })
 
+test("mantiene offsets contiguos y slices exactos dentro de cada bloque", () => {
+  const source = "Primera oración. Segunda oración más extensa. Tercera oración."
+  const blockStart = 275
+  const document = {
+    sections: [{
+      id: "offsets",
+      title: "Offsets",
+      blocks: [{
+        id: "offsets-1",
+        text: source,
+        startOffset: blockStart,
+        endOffset: blockStart + source.length,
+      }],
+    }],
+  }
+  const result = segmentDocument(document)
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  for (const [index, segment] of result.entries()) {
+    const localStart = segment.startOffset - blockStart
+    const localEnd = segment.endOffset - blockStart
+    assert.equal(source.slice(localStart, localEnd), segment.text)
+    if (index > 0) {
+      assert.equal(result[index - 1].endOffset, segment.startOffset)
+    }
+  }
+  assert.equal(result[0].startOffset, blockStart)
+  assert.equal(result[result.length - 1].endOffset, blockStart + source.length)
+})
+
