@@ -311,3 +311,13 @@ test("mantiene offsets contiguos y slices exactos dentro de cada bloque", () => 
   assert.equal(result[result.length - 1].endOffset, blockStart + source.length)
 })
 
+test("procesa bloques extensos con oraciones y listas sin perder continuidad", () => {
+  const sentences = Array.from({ length: 500 }, (_, index) => `Oración ${index + 1}.`).join(" ")
+  const source = `${sentences}\nOpciones:\nA. Primera opción\nB. Segunda opción\nC. Tercera opción\nFin.`
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.equal(result.length, 501)
+  assert.match(result[result.length - 1].text, /A\. Primera opción[\s\S]*C\. Tercera opción/)
+})
+
