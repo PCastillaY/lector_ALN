@@ -141,7 +141,7 @@ test("reconoce etc. como cierre de oración solo ante un nuevo inicio", () => {
 })
 
 test("distingue una inicial de oración de una lista alfabética", () => {
-  const source = "A. Es la respuesta correcta.\\nLuego veremos la justificación.\\n\\nOpciones:\\nA. Primera opción\\nB. Segunda opción\\nC. Tercera opción"
+  const source = "A. Es la respuesta correcta.\nLuego veremos la justificación.\n\nOpciones:\nA. Primera opción\nB. Segunda opción\nC. Tercera opción"
   const result = segmentDocument(makeDocument([source]))
 
   assert.equal(result.map((segment) => segment.text).join(""), source)
