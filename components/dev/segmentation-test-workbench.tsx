@@ -8,6 +8,7 @@ import type { DocumentContent, DocumentFormat, StoredDocument } from "@/lib/docu
 import type { TextSegment } from "@/lib/documents/segmentation/types"
 
 interface BlockCheck {
+  sectionId: string
   sectionTitle: string
   blockId: string
   blockText: string
@@ -59,7 +60,7 @@ function inspectSegmentation(content: DocumentContent, segments: TextSegment[]):
         if (segment.startOffset !== expectedOffset) contiguous = false
         expectedOffset = segment.endOffset
 
-        if (segment.text.length > 500 && /\\s/u.test(segment.text.trim())) {
+        if (segment.text.length > 500 && /\s/u.test(segment.text.trim())) {
           warnings.push(
             `El segmento ${segment.id} supera 500 unidades UTF-16 y contiene espacios (${segment.text.length}).`,
           )
@@ -74,6 +75,7 @@ function inspectSegmentation(content: DocumentContent, segments: TextSegment[]):
       if (!contiguous) errors.push(`Hay huecos o solapamientos en los offsets del bloque "${block.id}" (${section.title}).`)
 
       checks.push({
+        sectionId: section.id,
         sectionTitle: section.title,
         blockId: block.id,
         blockText: block.text,
@@ -118,7 +120,7 @@ export function SegmentationTestWorkbench() {
 
       const document: StoredDocument = {
         id: `manual-test-${Date.now()}`,
-        title: file.name.replace(/\\.[^.]+$/u, ""),
+        title: file.name.replace(/\.[^.]+$/u, ""),
         fileName: file.name,
         format,
         sizeBytes: file.size,
@@ -208,7 +210,7 @@ export function SegmentationTestWorkbench() {
                     <p className="text-xs text-slate-500">{section.blocks.length} bloques</p>
                   </header>
                   <div className="space-y-4 p-5">
-                    {report.checks.filter((item) => item.sectionTitle === section.title).map((block) => (
+                    {report.checks.filter((item) => item.sectionId === section.id).map((block) => (
                       <div key={block.blockId} className="space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{block.blockId}</p>
