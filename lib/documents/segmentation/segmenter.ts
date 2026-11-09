@@ -10,21 +10,63 @@ const ABBREVIATIONS = new Set([
   "uds", "vol",
 ])
 
-function isAbbreviation(text: string, periodIndex: number): boolean {
+function isAbbreviation(
+  text: string,
+  periodIndex: number,
+  following: string,
+): boolean {
   const prefix = text.slice(0, periodIndex)
   const match = prefix.match(/([\p{L}]+)$/u)
   if (!match) return false
+
   const word = match[1].toLocaleLowerCase("es")
+
+  // "Etc." can also close a sentence when the next sentence starts uppercase.
+  if (word === "etc") {
+    const nextToken = following.replace(/^[«"“¿¡(\[]+/u, "")
+    return !/^\p{Lu}/u.test(nextToken)
+  }
+
   if (ABBREVIATIONS.has(word)) return true
 
   // Initials such as "J. R. R. Tolkien" should not end a sentence.
   return word.length === 1 && /\p{Lu}/u.test(match[1])
 }
 
+function listMarkerCategory(line: string): string | null {
+  const match = line.match(/^\s*(\d+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)\.\s+\S/u)
+  if (!match) return null
+
+  const marker = match[1]
+  if (/^\d+$/u.test(marker)) return "numeric"
+  if (marker.length === 1) return "alpha"
+  return "roman"
+}
+
 function isListMarker(text: string, periodIndex: number): boolean {
   const lineStart = text.lastIndexOf("\n", periodIndex - 1) + 1
+  const lineEndIndex = text.indexOf("\n", periodIndex)
+  const lineEnd = lineEndIndex === -1 ? text.length : lineEndIndex
+  const line = text.slice(lineStart, lineEnd)
   const linePrefix = text.slice(lineStart, periodIndex).trim()
-  return /^(?:\d+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)$/u.test(linePrefix)
+
+  if (!/^(?:\d+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)$/u.test(linePrefix)) return false
+
+  // A marker is treated as a list item only when a neighboring line confirms
+  // the same marker family. This avoids swallowing sentence initials such as "A.".
+  const lines = text.split("\n")
+  const lineIndex = text.slice(0, lineStart).split("\n").length - 1
+  const category = listMarkerCategory(line)
+  if (!category) return false
+
+  const previousCategory = lineIndex > 0
+    ? listMarkerCategory(lines[lineIndex - 1])
+    : null
+  const nextCategory = lineIndex + 1 < lines.length
+    ? listMarkerCategory(lines[lineIndex + 1])
+    : null
+
+  return previousCategory === category || nextCategory === category
 }
 
 function sentenceBoundaries(text: string): number[] {
@@ -38,14 +80,14 @@ function sentenceBoundaries(text: string): number[] {
     const whitespace = next.match(/^\s+/u)
     if (!whitespace) continue
 
+    const following = next.slice(whitespace[0].length)
     const lastPunctuation = match[0][0]
     if (lastPunctuation === "." && (
-      isAbbreviation(text, match.index) ||
+      isAbbreviation(text, match.index, following) ||
       isListMarker(text, match.index) ||
-      /\d$/u.test(text.slice(0, match.index)) && /^\d/u.test(next.trimStart())
+      /\d$/u.test(text.slice(0, match.index)) && /^\d/u.test(following)
     )) continue
 
-    const following = next.slice(whitespace[0].length)
     if (!following) {
       boundaries.push(text.length)
       continue
