@@ -6,10 +6,10 @@ const DEFAULT_MAX_LENGTH = 500
 const COMMON_SENTENCE_STARTERS = new Set([
   "además", "ahora", "al", "allí", "aunque", "ayer", "cada", "como", "con",
   "cuando", "de", "del", "después", "donde", "el", "ella", "ellas", "ellos",
-  "en", "entonces", "esa", "esas", "ese", "eso", "esos", "esta", "está",
-  "estas", "este", "esto", "estos", "finalmente", "hoy", "la", "las", "luego",
+  "en", "entonces", "es", "esa", "esas", "ese", "eso", "esos", "esta", "está",
+  "estas", "este", "esto", "estos", "finalmente", "fue", "hay", "hoy", "la", "las", "luego",
   "mañana", "mientras", "no", "o", "para", "pero", "por", "porque", "primero",
-  "primera", "se", "según", "si", "sin", "su", "sus", "también",
+  "primera", "se", "según", "será", "son", "si", "sin", "su", "sus", "también",
   "tampoco", "tras", "un", "una", "unas", "unos", "ya",
 ])
 
