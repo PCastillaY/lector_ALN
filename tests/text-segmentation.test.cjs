@@ -86,3 +86,59 @@ test("permite un token individual más largo que el límite sin cortarlo", () =>
 test("rechaza un límite de longitud inválido", () => {
   assert.throws(() => segmentDocument(makeDocument(["Texto."]), { maxLength: 0 }), /entero positivo/)
 })
+
+test("conserva diálogos, comillas y signos de cierre", () => {
+  const source = "—No lo sé —dijo Ana—. «Quizá mañana», respondió Luis. Luego veremos."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.equal(result.length, 3)
+  assert.match(result[0].text, /dijo Ana/)
+  assert.match(result[1].text, /respondió Luis/)
+  assert.match(result[2].text, /^Luego/)
+})
+
+test("no divide puntos suspensivos de vacilación, ni Unicode ni ASCII", () => {
+  const source = "No sé… quizá mañana. No estoy seguro... tal vez después. Finalmente, sí."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.equal(result.length, 3)
+  assert.match(result[0].text, /No sé… quizá mañana/)
+  assert.match(result[1].text, /No estoy seguro\.\.\. tal vez después/)
+})
+
+test("no confunde enumeraciones al inicio de línea con finales de oración", () => {
+  const source = "Elementos:\n1. Agua\n2. Fuego\n3. Tierra\nFin."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.equal(result.length, 1)
+})
+
+test("conserva saltos de línea dentro de una oración y separa las siguientes", () => {
+  const source = "Primera línea\nque continúa. Segunda línea.\nTercera."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "Primera línea\nque continúa. ",
+    "Segunda línea.\n",
+    "Tercera.",
+  ])
+})
+
+test("mantiene offsets UTF-16 exactos con caracteres suplementarios", () => {
+  const source = "😀 Inicio. Fin."
+  const blockStart = 1000
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  for (const segment of result) {
+    const localStart = segment.startOffset - blockStart
+    const localEnd = segment.endOffset - blockStart
+    assert.equal(source.slice(localStart, localEnd), segment.text)
+    assert.equal(segment.endOffset - segment.startOffset, segment.text.length)
+  }
+})
+
