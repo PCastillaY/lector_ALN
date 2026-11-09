@@ -83,7 +83,6 @@ function compatibleMarkerCategories(left: string | null, right: string | null): 
 
 function findListMarkerPeriods(text: string): Set<number> {
   const lines: Array<{
-    start: number
     category: string | null
     periodIndex: number | null
   }> = []
@@ -97,7 +96,6 @@ function findListMarkerPeriods(text: string): Set<number> {
     const category = listMarkerCategory(line)
 
     lines.push({
-      start: lineStart,
       category,
       periodIndex: markerMatch ? lineStart + markerMatch[0].length - 1 : null,
     })
