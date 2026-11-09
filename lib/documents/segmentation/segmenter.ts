@@ -4,8 +4,13 @@ import type { SegmentationOptions, TextSegment } from "./types"
 const DEFAULT_MAX_LENGTH = 500
 
 const COMMON_SENTENCE_STARTERS = new Set([
-  "además", "así", "aunque", "cuando", "después", "entonces", "finalmente",
-  "luego", "mientras", "pero", "por", "primero", "sin", "también", "tampoco",
+  "además", "ahora", "al", "allí", "aunque", "ayer", "cada", "como", "con",
+  "cuando", "de", "del", "después", "donde", "el", "ella", "ellas", "ellos",
+  "en", "entonces", "esa", "esas", "ese", "eso", "esos", "esta", "está",
+  "estas", "este", "esto", "estos", "finalmente", "hoy", "la", "las", "luego",
+  "mañana", "mientras", "no", "o", "para", "pero", "por", "porque", "primero",
+  "primera", "primero", "se", "según", "si", "sin", "su", "sus", "también",
+  "tampoco", "tras", "un", "una", "unas", "unos", "ya",
 ])
 
 const ABBREVIATIONS = new Set([
@@ -51,8 +56,9 @@ function isAbbreviation(
     const previousInitial = /(?:^|\s)\p{Lu}\.\s*$/u.test(prefixBeforeWord)
     const nextWord = nextToken.match(/^[\p{L}]+/u)?.[0].toLocaleLowerCase("es")
     const startsNewSentence = nextWord !== undefined && COMMON_SENTENCE_STARTERS.has(nextWord)
+    const singleInitialName = /^\p{Lu}\p{Ll}+/u.test(nextToken)
 
-    return (!startsNewSentence && nameInitials.test(context)) ||
+    return (!startsNewSentence && (nameInitials.test(context) || singleInitialName)) ||
       (previousInitial && !/^\p{Lu}/u.test(nextToken)) ||
       !/^\p{Lu}/u.test(nextToken)
   }
