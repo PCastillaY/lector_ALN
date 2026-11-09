@@ -20,21 +20,33 @@ function isAbbreviation(
   if (!match) return false
 
   const word = match[1].toLocaleLowerCase("es")
+  const nextToken = following.replace(/^[«"“¿¡(\[]+/u, "")
+  const prefixBeforeWord = prefix.slice(0, -match[1].length)
 
-  // "Etc." can also close a sentence when the next sentence starts uppercase.
-  if (word === "etc") {
-    const nextToken = following.replace(/^[«"“¿¡(\[]+/u, "")
+  // Compound abbreviations: EE. UU. and p. ej.
+  if (word === "ee" && /^UU\./iu.test(following)) return true
+  if (word === "uu" && /(?:^|\s)EE\.\s*$/iu.test(prefixBeforeWord)) {
+    return !/^\p{Lu}/u.test(nextToken)
+  }
+  if (word === "p" && /^ej\./iu.test(following)) return true
+  if (word === "ej" && /(?:^|\s)p\.\s*$/iu.test(prefixBeforeWord)) {
     return !/^\p{Lu}/u.test(nextToken)
   }
 
-  const nextToken = following.replace(/^[«"“¿¡(\[]+/u, "")
+  // "Etc." can also close a sentence when the next sentence starts uppercase.
+  if (word === "etc") return !/^\p{Lu}/u.test(nextToken)
 
-  // Single-letter abbreviations are context-sensitive; uppercase sentence
-  // starts are boundaries unless this period belongs to a multi-part name.
+  // A one-letter token followed by another initial and a period is part of
+  // a compound abbreviation (e.g. S. A.) or a multi-part proper name.
   if (word.length === 1) {
+    if (/^\p{Lu}\.\s*/u.test(nextToken)) return true
+
     const context = text.slice(0, periodIndex + 1) + (following ? ` ${following}` : "")
     const nameInitials = /(?:^|\s)(?:\p{Lu}\.\s+){2,3}\p{Lu}\p{Ll}+/u
-    return nameInitials.test(context) || !/^\p{Lu}/u.test(nextToken)
+    const previousInitial = /(?:^|\s)\p{Lu}\.\s*$/u.test(prefixBeforeWord)
+    return nameInitials.test(context) ||
+      (previousInitial && !/^\p{Lu}/u.test(nextToken)) ||
+      !/^\p{Lu}/u.test(nextToken)
   }
 
   if (ABBREVIATIONS.has(word)) return true
@@ -47,8 +59,16 @@ function listMarkerCategory(line: string): string | null {
 
   const marker = match[1]
   if (/^\d+$/u.test(marker)) return "numeric"
-  if (marker.length === 1) return "alpha"
-  return "roman"
+  if (marker.length > 1) return "roman"
+  if (/^[ivx]$/iu.test(marker)) return "ambiguous"
+  return "alpha"
+}
+
+function compatibleMarkerCategories(left: string | null, right: string | null): boolean {
+  if (!left || !right) return false
+  if (left === right) return true
+  return left === "ambiguous" && (right === "roman" || right === "alpha") ||
+    right === "ambiguous" && (left === "roman" || left === "alpha")
 }
 
 function isListMarker(text: string, periodIndex: number): boolean {
@@ -74,7 +94,8 @@ function isListMarker(text: string, periodIndex: number): boolean {
     ? listMarkerCategory(lines[lineIndex + 1])
     : null
 
-  return previousCategory === category || nextCategory === category
+  return compatibleMarkerCategories(previousCategory, category) ||
+    compatibleMarkerCategories(category, nextCategory)
 }
 
 function sentenceBoundaries(text: string): number[] {
