@@ -144,3 +144,30 @@ test("recupera texto de capítulos EPUB que usan contenedores genéricos", async
   assert.equal(result.sections[0].blocks[0].text, "Texto dentro de un contenedor genérico.")
   assert.equal(fake.state.destroyed, 1)
 })
+test("segmenta capítulos EPUB extraídos conservando capítulo, bloque y offsets", async () => {
+  const first = fakeSection(0, [
+    element("h1", "Capítulo uno"),
+    element("p", "Primera oración. Segunda oración."),
+  ])
+  const second = fakeSection(1, [
+    element("h2", "Capítulo dos"),
+    element("p", "Tercera oración. Cuarta oración."),
+  ])
+  const fake = fakeEpubFactory([first, second])
+  const content = await extractEpubDocument(makeDocument(), fake.factory)
+  const { segmentDocument } = require(path.join(buildDir, "lib/documents/segmentation/segmenter.js"))
+  const segments = segmentDocument(content)
+
+  assert.deepEqual([...new Set(segments.map((segment) => segment.sectionId))], ["chapter-1", "chapter-2"])
+  assert.equal(segments.map((segment) => segment.text).join(""), content.sections
+    .flatMap((section) => section.blocks.map((block) => block.text)).join(""))
+  for (const segment of segments) {
+    const section = content.sections.find((item) => item.id === segment.sectionId)
+    const block = section.blocks.find((item) => item.id === segment.sourceBlockId)
+    assert.equal(block.text.slice(
+      segment.startOffset - block.startOffset,
+      segment.endOffset - block.startOffset,
+    ), segment.text)
+  }
+})
+
