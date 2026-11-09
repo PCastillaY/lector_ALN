@@ -3,6 +3,11 @@ import type { SegmentationOptions, TextSegment } from "./types"
 
 const DEFAULT_MAX_LENGTH = 500
 
+const COMMON_SENTENCE_STARTERS = new Set([
+  "además", "así", "aunque", "cuando", "después", "entonces", "finalmente",
+  "luego", "mientras", "pero", "por", "primero", "sin", "también", "tampoco",
+])
+
 const ABBREVIATIONS = new Set([
   "a", "adm", "aprox", "atte", "av", "c", "cap", "cía", "coord", "d", "da",
   "dr", "dra", "ee", "ej", "etc", "fig", "gral", "ing", "lic", "m", "máx", "mín",
