@@ -242,3 +242,39 @@ test("conserva signos de cierre anidados y puntuación de diálogo", () => {
   assert.match(result[0].text, /¿Vendrás mañana \(si puedes\)\?/)
   assert.match(result[1].text, /Sí, claro/)
 })
+
+test("reconoce iniciales únicas antes de apellidos", () => {
+  const source = "El informe fue revisado por M. Vargas. A continuación, se publicó."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "El informe fue revisado por M. Vargas. ",
+    "A continuación, se publicó.",
+  ])
+})
+
+test("cierra abreviaturas societarias antes de determinantes de una nueva oración", () => {
+  const source = "La entidad es S. A. El contrato está vigente. La filial es S. R. L. La actividad continúa."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "La entidad es S. A. ",
+    "El contrato está vigente. ",
+    "La filial es S. R. L. ",
+    "La actividad continúa.",
+  ])
+})
+
+test("mantiene abreviaturas editoriales junto a cifras", () => {
+  const source = "El Dr. Pérez consultó la pág. 12, núm. 4. Luego llamó."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "El Dr. Pérez consultó la pág. 12, núm. 4. ",
+    "Luego llamó.",
+  ])
+})
+
