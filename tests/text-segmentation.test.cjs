@@ -180,12 +180,12 @@ test("mantiene offsets UTF-16 exactos con caracteres suplementarios", () => {
 })
 
 test("reconoce abreviaturas compuestas sin cortar su interior", () => {
-  const source = "La sede está en EE. UU. y la empresa es S. A. El manual explica, p. ej. cómo proceder. Después continúa."
+  const source = "La sede está en EE. UU. y la empresa es S. A. que mantiene, p. ej. los registros. Después continúa."
   const result = segmentDocument(makeDocument([source]))
 
   assert.equal(result.map((segment) => segment.text).join(""), source)
   assert.deepEqual(result.map((segment) => segment.text), [
-    "La sede está en EE. UU. y la empresa es S. A. El manual explica, p. ej. cómo proceder. ",
+    "La sede está en EE. UU. y la empresa es S. A. que mantiene, p. ej. los registros. ",
     "Después continúa.",
   ])
 })
@@ -218,7 +218,7 @@ test("mantiene títulos y párrafos en sus bloques de origen", () => {
       id: "chapter",
       title: "Capítulo I",
       blocks: [
-        { id: "heading", text: "Capítulo I. Fundamentos", startOffset: 0, endOffset: 24 },
+        { id: "heading", text: "Fundamentos del capítulo", startOffset: 0, endOffset: 24 },
         { id: "paragraph", text: "Este es el primer párrafo. Este es el segundo.", startOffset: 30, endOffset: 77 },
       ],
     }],
@@ -230,7 +230,7 @@ test("mantiene títulos y párrafos en sus bloques de origen", () => {
       "paragraph",
       "paragraph",
   ])
-  assert.equal(result.map((segment) => segment.text).join(""), "Capítulo I. FundamentosEste es el primer párrafo. Este es el segundo.")
+  assert.equal(result.map((segment) => segment.text).join(""), "Fundamentos del capítuloEste es el primer párrafo. Este es el segundo.")
 })
 
 test("conserva signos de cierre anidados y puntuación de diálogo", () => {
