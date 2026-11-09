@@ -27,10 +27,18 @@ function isAbbreviation(
     return !/^\p{Lu}/u.test(nextToken)
   }
 
-  if (ABBREVIATIONS.has(word)) return true
+  const nextToken = following.replace(/^[«"“¿¡(\[]+/u, "")
 
-  // Initials such as "J. R. R. Tolkien" should not end a sentence.
-  return word.length === 1 && /\p{Lu}/u.test(match[1])
+  // Single-letter abbreviations are context-sensitive; uppercase sentence
+  // starts are boundaries unless this period belongs to a multi-part name.
+  if (word.length === 1) {
+    const context = text.slice(0, periodIndex + 1) + following
+    const nameInitials = /(?:^|\\s)(?:\\p{Lu}\\.\\s+){1,3}\\p{Lu}\\p{Ll}+/u
+    return nameInitials.test(context) || !/^\\p{Lu}/u.test(nextToken)
+  }
+
+  if (ABBREVIATIONS.has(word)) return true
+  return false
 }
 
 function listMarkerCategory(line: string): string | null {
