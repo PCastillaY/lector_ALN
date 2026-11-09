@@ -25,7 +25,7 @@ function isAbbreviation(
   periodIndex: number,
   following: string,
 ): boolean {
-  const prefix = text.slice(0, periodIndex)
+  const prefix = text.slice(Math.max(0, periodIndex - 64), periodIndex)
   const match = prefix.match(/([\p{L}]+)$/u)
   if (!match) return false
 
@@ -51,15 +51,11 @@ function isAbbreviation(
   if (word.length === 1) {
     if (/^\p{Lu}\.\s*/u.test(nextToken)) return true
 
-    const context = text.slice(0, periodIndex + 1) + (following ? ` ${following}` : "")
-    const nameInitials = /(?:^|\s)(?:\p{Lu}\.\s+){2,3}\p{Lu}\p{Ll}+/u
-    const previousInitial = /(?:^|\s)\p{Lu}\.\s*$/u.test(prefixBeforeWord)
     const nextWord = nextToken.match(/^[\p{L}]+/u)?.[0].toLocaleLowerCase("es")
     const startsNewSentence = nextWord !== undefined && COMMON_SENTENCE_STARTERS.has(nextWord)
     const singleInitialName = /^\p{Lu}\p{Ll}+/u.test(nextToken)
 
-    return (!startsNewSentence && (nameInitials.test(context) || singleInitialName)) ||
-      (previousInitial && !/^\p{Lu}/u.test(nextToken)) ||
+    return (!startsNewSentence && singleInitialName) ||
       !/^\p{Lu}/u.test(nextToken)
   }
 
