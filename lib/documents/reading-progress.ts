@@ -77,12 +77,17 @@ export function resolveReadingProgressIndex(
       (segment) => segment.blockIndex === progress.blockIndex,
     )
     const candidates = sameBlockPosition.length > 0 ? sameBlockPosition : sectionSegments
-    const selected = candidates.reduce((closest, candidate) =>
-      Math.abs(candidate.segmentIndex - progress.segmentIndex) <
+    const selected = candidates.reduce((closest, candidate) => {
+      const candidateBlockDistance = Math.abs(candidate.blockIndex - progress.blockIndex)
+      const closestBlockDistance = Math.abs(closest.blockIndex - progress.blockIndex)
+      if (candidateBlockDistance !== closestBlockDistance) {
+        return candidateBlockDistance < closestBlockDistance ? candidate : closest
+      }
+      return Math.abs(candidate.segmentIndex - progress.segmentIndex) <
         Math.abs(closest.segmentIndex - progress.segmentIndex)
         ? candidate
-        : closest,
-    )
+        : closest
+    })
     return selected.order
   }
 
