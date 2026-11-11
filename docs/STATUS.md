@@ -324,3 +324,15 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 - La biblioteca permite abrir TXT y PDF. La extracción de PDF escaneados/OCR, PDFs protegidos con contraseña y extracción avanzada de estructura/columnas/tablas no está soportada.
 - **Pendiente de validación:** CI, typecheck y build con la dependencia real; prueba manual en Codespaces con PDF digital de varias páginas, PDF escaneado, PDF protegido y archivo corrupto; comprobar que `/pdf.worker.min.mjs` responde correctamente y que la extracción funciona sin enviar archivos fuera del navegador.
 - No marcar esta fase como validada ni fusionar hasta superar las verificaciones automatizadas y manuales.
+
+
+## Integración del segmentador en el lector — 2026-11-11
+
+- Se integró `segmentDocument()` en `ReaderWorkspace`; la extracción local existente permanece sin cambios.
+- El visor renderiza cada segmento dentro de su bloque y sección de origen, conservando el texto original, el orden, los párrafos y los encabezados de EPUB/PDF.
+- Se añadió navegación anterior/siguiente, indicador de posición y barra de progreso sobre el total de segmentos.
+- El segmento activo se resalta y el visor desplaza la lectura hasta él al navegar.
+- La agrupación de segmentos se realiza por sección y bloque de origen para evitar colisiones entre identificadores de bloque repetidos en distintas secciones.
+- No se implementó reproducción TTS, persistencia del progreso ni sincronización de posición.
+- **Pendiente de validación:** ejecutar en Codespaces `pnpm typecheck`, `pnpm test` y `pnpm build`; después abrir documentos TXT, PDF y EPUB desde la biblioteca y verificar navegación, resaltado, desplazamiento, límites y rendimiento.
+- La herramienta temporal `/dev/segmentation-test` continúa siendo solo de desarrollo.
