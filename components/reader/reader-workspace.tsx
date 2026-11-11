@@ -6,6 +6,7 @@ import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, LoaderCircle } from "lu
 import type { DocumentContent, DocumentFormat } from "@/lib/documents/types"
 import type { TextSegment } from "@/lib/documents/segmentation/types"
 import { createReadingProgress, resolveReadingProgressIndex } from "@/lib/documents/reading-progress"
+import type { ReadingProgress } from "@/lib/documents/reading-progress"
 import { segmentDocument } from "@/lib/documents/segmentation/segmenter"
 import { extractDocumentContent } from "@/lib/documents/extract"
 import { getLocalDocument, getReadingProgress, saveReadingProgress } from "@/lib/storage/local/document-store"
@@ -26,7 +27,7 @@ export function ReaderWorkspace({ documentId }: ReaderWorkspaceProps) {
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(0)
   const [progressReady, setProgressReady] = useState(false)
   const segmentElements = useRef<Map<string, HTMLSpanElement>>(new Map())
-  const pendingProgress = useRef<import("@/lib/documents/reading-progress").ReadingProgress | null>(null)
+  const pendingProgress = useRef<ReadingProgress | null>(null)
   const shouldScrollToActive = useRef(false)
 
   useEffect(() => {
