@@ -132,10 +132,18 @@ function sentenceBoundaries(text: string): number[] {
     const end = match.index + match[0].length
     const next = text.slice(end)
     const whitespace = next.match(/^\s+/u)
-    if (!whitespace) continue
+    const lastPunctuation = match[0][0]
+
+    // Question and exclamation marks can close a sentence even without
+    // whitespace when the next sentence starts immediately with a letter.
+    if (!whitespace) {
+      if (/[?!]/u.test(match[0]) && /^\p{L}/u.test(next)) {
+        boundaries.push(end)
+      }
+      continue
+    }
 
     const following = next.slice(whitespace[0].length)
-    const lastPunctuation = match[0][0]
     if (lastPunctuation === "." && (
       isAbbreviation(text, match.index, following) ||
       listMarkerPeriods.has(match.index) ||
