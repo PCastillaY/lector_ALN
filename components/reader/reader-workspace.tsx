@@ -49,7 +49,7 @@ export function ReaderWorkspace({ documentId }: ReaderWorkspaceProps) {
         if (!document) throw new Error("El documento no existe en esta biblioteca local.")
         const extracted = await extractDocumentContent(document)
         if (!cancelled) {
-          let savedProgress = null
+          let savedProgress: ReadingProgress | null = null
           try {
             savedProgress = await getReadingProgress(documentId)
           } catch (progressError) {
