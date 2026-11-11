@@ -144,3 +144,11 @@ public/
 - Manejar archivos corruptos, vacíos, grandes y formatos no compatibles con mensajes accionables.
 - Mantener el modo local plenamente útil sin cuenta ni conexión.
 - Pruebas unitarias para validación, segmentación y repositorios; pruebas de integración para extracción y TTS.
+
+
+## Integración de segmentación en el visor — 2026-11-11
+
+- `ReaderWorkspace` consume el segmentador de `lib/documents/segmentation` después de la extracción local.
+- Los segmentos se renderizan como spans dentro de sus bloques originales; la jerarquía de secciones y párrafos no se aplana ni se reconstruye mediante offsets globales.
+- La navegación actual permite avanzar/retroceder por segmentos, muestra el progreso y resalta/desplaza hasta el segmento activo.
+- Esta capa es visual y de navegación. No constituye todavía una cola TTS, no reproduce audio y no persiste la posición de lectura.
