@@ -41,6 +41,52 @@ test("segmenta oraciones y conserva exactamente el texto y sus offsets", () => {
   }
 })
 
+test("separa interrogaciones seguidas inmediatamente de mayúscula", () => {
+  const source = "¿Terminaste?Ahora seguimos."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "¿Terminaste?",
+    "Ahora seguimos.",
+  ])
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+})
+
+test("separa interrogaciones seguidas inmediatamente de minúscula", () => {
+  const source = "¿Terminaste?ahora seguimos."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "¿Terminaste?",
+    "ahora seguimos.",
+  ])
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+})
+
+test("separa exclamaciones seguidas inmediatamente de una letra", () => {
+  const source = "¡Cuidado!Corre."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "¡Cuidado!",
+    "Corre.",
+  ])
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+})
+
+test("separa signos combinados de interrogación y exclamación sin espacio", () => {
+  const source = "¿En serio?!No lo creo. ¡De verdad!?Es increíble."
+  const result = segmentDocument(makeDocument([source]))
+
+  assert.deepEqual(result.map((segment) => segment.text), [
+    "¿En serio?!",
+    "No lo creo. ",
+    "¡De verdad!?",
+    "Es increíble.",
+  ])
+  assert.equal(result.map((segment) => segment.text).join(""), source)
+})
+
 test("no divide abreviaturas, iniciales ni decimales", () => {
   const source = "El Dr. Pérez llegó a las 3.14 p. m. con J. R. Tolkien. Luego salió."
   const result = segmentDocument(makeDocument([source]))
