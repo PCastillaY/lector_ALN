@@ -1,4 +1,4 @@
-import type { TextSegment } from "@/lib/documents/segmentation/types"
+import type { TextSegment } from "./segmentation/types"
 
 export interface ReadingProgress {
   schemaVersion: 1
