@@ -328,6 +328,8 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 
 ## Integración del segmentador en el lector — 2026-11-11
 
+- Corrección posterior: los signos de interrogación y exclamación también cierran un segmento cuando la siguiente oración comienza inmediatamente con una letra, sin espacio intermedio. Se añadieron cuatro pruebas de regresión para mayúsculas, minúsculas, exclamaciones y signos combinados.
+- La corrección está implementada en la rama; quedan pendientes la ejecución de typecheck, suite completa, build y validación manual en Codespaces.
 - Se integró `segmentDocument()` en `ReaderWorkspace`; la extracción local existente permanece sin cambios.
 - El visor renderiza cada segmento dentro de su bloque y sección de origen, conservando el texto original, el orden, los párrafos y los encabezados de EPUB/PDF.
 - Se añadió navegación anterior/siguiente, indicador de posición y barra de progreso sobre el total de segmentos.
