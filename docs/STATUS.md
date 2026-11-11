@@ -1,10 +1,10 @@
 # Lector ALN — estado del proyecto
 
-> **Última actualización:** 2026-11-06  
-> **Rama base vigente:** `main`  
+> **Última actualización:** 2026-11-09  
+> **Rama de trabajo vigente:** `feat/text-segmentation` (basada en `main`)  
 > **Último PR integrado:** PR #5 — extracción EPUB local (Squash and merge).  
 > **Commit de PR #5:** `b29cfc4f769ab66921adefb6fe458605d396efaf`  
-> **Siguiente fase aprobada:** segmentación de texto, antes de implementar TTS.  
+> **Fase en curso:** segmentación de texto, antes de implementar TTS.  
 > **Criterio rector:** buscar excelencia verificable; no confundir una demo funcional con un producto terminado.
 
 Este documento es el registro operativo del proyecto. La sección «Estado vigente» prevalece sobre los registros históricos posteriores, que conservan el contexto de cada fase y pueden contener decisiones ya superadas.
@@ -31,16 +31,22 @@ La ruta **importar → extraer → leer** está implementada para los tres forma
 - **Arquitectura:** mantener extracción específica por formato y normalización común mediante `DocumentContent`.
 - **Privacidad:** conservar el enfoque local-first; no enviar documentos a servicios externos como parte de la extracción.
 
-### Próxima fase aprobada: segmentación de texto
+### Fase en curso: segmentación de texto
 
-Crear la rama `feat/text-segmentation` desde `main`. El objetivo es implementar una capa independiente que transforme el contenido normalizado en segmentos adecuados para narración futura, sin integrar todavía un motor TTS.
+La rama `feat/text-segmentation` se creó desde el último commit de `main`. El objetivo es implementar una capa independiente que transforme el contenido normalizado en segmentos adecuados para narración futura, sin integrar todavía un motor TTS.
+
+**Validación incremental (2026-11-09):** el usuario confirmó en Codespaces que `pnpm typecheck`, `pnpm test` (49/49) y `pnpm build` pasan en el commit `0d129682a64428c99bd27c43f4a20c9aeaa3fb03`. La corrección cubrió el cierre de oración después de abreviaturas compuestas como `S. A.`, sin romper los casos de iniciales, nombres, enumeraciones y offsets ya probados.
+
+**Revisión de robustez en curso:** se ampliaron las heurísticas para iniciales de una sola letra y comienzos de oración, se incorporaron casos para razones sociales `S. A.`, `S. R. L.` y `S. L.`, abreviaturas editoriales junto a cifras, offsets contiguos, bloques extensos y pruebas de integración entre segmentación y extracción TXT/PDF/EPUB. También se precomputan los marcadores de listas por línea para evitar volver a dividir todo el bloque por cada signo de puntuación. Esta ampliación todavía **no está validada por el usuario**; requiere typecheck, suite completa y build en Codespaces.
+
+**Implementación en la rama:** contrato `TextSegment`, segmentador por bloques/oraciones, referencias a sección y bloque, orden global y partición por longitud preferida. La salida conserva cada fragmento como un slice exacto del bloque original. Los offsets se calculan sumando el índice UTF-16 local al offset inicial del bloque; no se presupone que TXT, PDF y EPUB compartan una única cadena fuente global. No se ha integrado TTS ni se ha fusionado la rama.
 
 Alcance propuesto para esa fase:
 
-- [ ] Definir el contrato `TextSegment` y sus identificadores.
-- [ ] Segmentar por párrafos y oraciones, respetando el orden del documento.
-- [ ] Preservar offsets exactos respecto al texto de origen y las referencias a sección/capítulo.
-- [ ] Establecer límites configurables de longitud sin cortar palabras ni perder puntuación.
+- [x] Definir el contrato `TextSegment` y sus identificadores (implementación inicial en revisión).
+- [x] Segmentar bloques por oraciones, respetando el orden del documento (implementación inicial; pendiente de validación).
+- [x] Preservar offsets relativos al bloque y referencias a sección/capítulo (semántica documentada; pendiente de validar con todos los extractores).
+- [x] Establecer límite configurable preferido sin cortar palabras ni perder puntuación (tokens individuales pueden exceder el límite).
 - [ ] Tratar abreviaturas, decimales, diálogos, listas, encabezados y puntuación compleja.
 - [ ] Añadir pruebas para TXT, PDF y EPUB, incluyendo documentos extensos y textos en español.
 - [ ] Verificar que la segmentación no altera el texto original ni rompe la continuidad entre segmentos.
@@ -318,3 +324,17 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 - La biblioteca permite abrir TXT y PDF. La extracción de PDF escaneados/OCR, PDFs protegidos con contraseña y extracción avanzada de estructura/columnas/tablas no está soportada.
 - **Pendiente de validación:** CI, typecheck y build con la dependencia real; prueba manual en Codespaces con PDF digital de varias páginas, PDF escaneado, PDF protegido y archivo corrupto; comprobar que `/pdf.worker.min.mjs` responde correctamente y que la extracción funciona sin enviar archivos fuera del navegador.
 - No marcar esta fase como validada ni fusionar hasta superar las verificaciones automatizadas y manuales.
+
+
+## Integración del segmentador en el lector — 2026-11-11
+
+- Corrección posterior: los signos de interrogación y exclamación también cierran un segmento cuando la siguiente oración comienza inmediatamente con una letra, sin espacio intermedio. Se añadieron cuatro pruebas de regresión para mayúsculas, minúsculas, exclamaciones y signos combinados.
+- La corrección está implementada en la rama; quedan pendientes la ejecución de typecheck, suite completa, build y validación manual en Codespaces.
+- Se integró `segmentDocument()` en `ReaderWorkspace`; la extracción local existente permanece sin cambios.
+- El visor renderiza cada segmento dentro de su bloque y sección de origen, conservando el texto original, el orden, los párrafos y los encabezados de EPUB/PDF.
+- Se añadió navegación anterior/siguiente, indicador de posición y barra de progreso sobre el total de segmentos.
+- El segmento activo se resalta y el visor desplaza la lectura hasta él al navegar.
+- La agrupación de segmentos se realiza por sección y bloque de origen para evitar colisiones entre identificadores de bloque repetidos en distintas secciones.
+- No se implementó reproducción TTS, persistencia del progreso ni sincronización de posición.
+- **Pendiente de validación:** ejecutar en Codespaces `pnpm typecheck`, `pnpm test` y `pnpm build`; después abrir documentos TXT, PDF y EPUB desde la biblioteca y verificar navegación, resaltado, desplazamiento, límites y rendimiento.
+- La herramienta temporal `/dev/segmentation-test` continúa siendo solo de desarrollo.

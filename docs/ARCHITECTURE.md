@@ -10,7 +10,7 @@ Aplicación web instalable de lectura asistida que importa documentos, presenta 
 - **Motor inicial candidato: Kokoro-82M:** probar primero su ejecución en navegador mediante un runtime compatible. Voces españolas identificadas: `ef_dora`, `em_alex` y `em_santa`. No asumir que su acento es latinoamericano ni que la calidad es suficiente hasta realizar pruebas auditivas.
 - **Alternativa de comparación: Piper:** evaluar voces regionales como `es_MX` y `es_AR`, además de `es_ES`. La disponibilidad, runtime web, rendimiento y licencia deben verificarse por modelo y voz; no asumir que todas las voces de un catálogo comparten licencia.
 - **Criterio de selección TTS:** naturalidad, inteligibilidad, pronunciación de español latinoamericano, prosodia narrativa, lectura de números/fechas/siglas, rendimiento en CPU/WebGPU, memoria, tamaño descargable, funcionamiento offline y licencias.
-- **Formatos objetivo:** EPUB, PDF con capa de texto, TXT, DOCX y MOBI.
+- **Formatos vigentes:** EPUB, PDF con capa de texto y TXT. DOCX y MOBI están fuera del alcance actual.
 - **PDF escaneado/OCR:** fuera del alcance inicial. Detectar documentos sin texto extraíble y explicar la limitación; no prometer lectura OCR.
 - **Biblioteca dual:** modo local sin cuenta y modo sincronizado con cuenta.
 - **Instalación:** PWA instalable como primera entrega offline. Una aplicación nativa de escritorio (Tauri/Electron) queda como posible evolución, no como requisito inicial.
@@ -26,12 +26,12 @@ Aplicación web instalable de lectura asistida que importa documentos, presenta 
 
 ### 2. Dominio documental
 Contrato común `DocumentRecord`: id, nombre, formato, tamaño, fecha de importación, origen de almacenamiento y estado de procesamiento.
-- Adaptadores: EPUB (epub.js), PDF (PDF.js), TXT (TextDecoder), DOCX (mammoth).
+- Adaptadores vigentes: EPUB (epub.js), PDF (PDF.js) y TXT (TextDecoder). DOCX y MOBI no están implementados ni forman parte del alcance actual.
 - El adaptador PDF procesa localmente la capa de texto con PDF.js; cada página con contenido se conserva como sección independiente. El worker de PDF.js se sirve desde el mismo origen, preparado desde la dependencia fijada durante `pnpm dev` y `pnpm build`.
 - PDF protegidos con contraseña y PDF sin texto seleccionable se informan como no compatibles; OCR queda fuera del alcance inicial.
 - MOBI: adaptador/conversión aislada; evaluar compatibilidad y licencias antes de incorporarlo.
 - Salida normalizada: `DocumentContent` con título, metadatos, secciones y bloques de texto ordenados.
-- Segmentador: divide por párrafos/oraciones y limita longitud de fragmentos para TTS, conservando offsets para sincronización.
+- Segmentador independiente en `lib/documents/segmentation/`: consume `DocumentContent` y produce `TextSegment` ordenados, vinculados a sección y bloque de origen. Divide bloques en oraciones y subdivide segmentos largos en límites de palabra. Conserva el texto mediante slices exactos y deriva offsets como `block.startOffset + índiceLocal`; no concatena bloques ni inventa una fuente global porque los offsets de TXT son posiciones sobre el texto decodificado, mientras PDF/EPUB usan offsets acumulados sobre contenido normalizado.
 - Normalización de texto para locución: tratar números, fechas, abreviaturas, siglas, signos y espacios sin alterar el texto visible del documento.
 
 ### 3. Narración
@@ -144,3 +144,11 @@ public/
 - Manejar archivos corruptos, vacíos, grandes y formatos no compatibles con mensajes accionables.
 - Mantener el modo local plenamente útil sin cuenta ni conexión.
 - Pruebas unitarias para validación, segmentación y repositorios; pruebas de integración para extracción y TTS.
+
+
+## Integración de segmentación en el visor — 2026-11-11
+
+- `ReaderWorkspace` consume el segmentador de `lib/documents/segmentation` después de la extracción local.
+- Los segmentos se renderizan como spans dentro de sus bloques originales; la jerarquía de secciones y párrafos no se aplana ni se reconstruye mediante offsets globales.
+- La navegación actual permite avanzar/retroceder por segmentos, muestra el progreso y resalta/desplaza hasta el segmento activo.
+- Esta capa es visual y de navegación. No constituye todavía una cola TTS, no reproduce audio y no persiste la posición de lectura.

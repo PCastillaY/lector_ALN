@@ -6,6 +6,7 @@ const buildDir = process.env.LECTOR_TEST_BUILD
 if (!buildDir) throw new Error("LECTOR_TEST_BUILD no está definido; ejecuta pnpm test.")
 
 const { extractDocumentContent } = require(path.join(buildDir, "lib/documents/extract.js"))
+const { segmentDocument } = require(path.join(buildDir, "lib/documents/segmentation/segmenter.js"))
 
 function makeDocument(content, overrides = {}) {
   const file = content instanceof File
@@ -65,3 +66,17 @@ test("informa cuando un formato todavía no tiene adaptador", async () => {
     /DOCX todavía no está disponible/,
   )
 })
+test("segmenta el contenido TXT extraído sin alterar texto ni offsets", async () => {
+  const source = "Primera oración. Segunda oración con el Dr. Pérez. Tercera oración."
+  const content = await extractDocumentContent(makeDocument(source))
+  const segments = segmentDocument(content)
+  const block = content.sections[0].blocks[0]
+
+  assert.equal(segments.map((segment) => segment.text).join(""), block.text)
+  for (const segment of segments) {
+    assert.equal(source.slice(segment.startOffset, segment.endOffset), segment.text)
+    assert.equal(segment.sourceBlockId, block.id)
+    assert.equal(segment.sectionId, content.sections[0].id)
+  }
+})
+

@@ -109,3 +109,28 @@ test("informa de un PDF sin páginas", async () => {
   await assert.rejects(() => extractPdfDocument(makeDocument(), fake.api), /no contiene páginas/)
   assert.equal(fake.state.destroyed, 1)
 })
+test("segmenta páginas PDF extraídas sin mezclar secciones ni offsets", async () => {
+  const fake = fakePdfJs([
+    [
+      { str: "Primera oración.", hasEOL: true },
+      { str: "Segunda oración.", hasEOL: true },
+    ],
+    [{ str: "Tercera oración.", hasEOL: true }],
+  ])
+  const content = await extractPdfDocument(makeDocument(), fake.api)
+  const { segmentDocument } = require(path.join(buildDir, "lib/documents/segmentation/segmenter.js"))
+  const segments = segmentDocument(content)
+
+  assert.deepEqual([...new Set(segments.map((segment) => segment.sectionId))], ["page-1", "page-2"])
+  assert.equal(segments.map((segment) => segment.text).join(""), content.sections
+    .flatMap((section) => section.blocks.map((block) => block.text)).join(""))
+  for (const segment of segments) {
+    const section = content.sections.find((item) => item.id === segment.sectionId)
+    const block = section.blocks.find((item) => item.id === segment.sourceBlockId)
+    assert.equal(block.text.slice(
+      segment.startOffset - block.startOffset,
+      segment.endOffset - block.startOffset,
+    ), segment.text)
+  }
+})
+
