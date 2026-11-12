@@ -31,7 +31,7 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - **TTS:** motor neuronal descargable; idioma inicial español; voces femeninas y masculinas seleccionables con preview. Chrome de escritorio es el primer objetivo.
 - **Candidato inicial:** Kokoro-82M mediante `kokoro-js`; voces españolas `ef_dora`, `em_alex` y `em_santa`. Piper permanece como alternativa de investigación, pendiente de validar runtime y licencias por voz.
 - **Backend:** WebAssembly/CPU Q8 como ruta de compatibilidad inicial; WebGPU/FP32 como alternativa experimental.
-- **Descargas:** los modelos no se incorporan al repositorio Git. La PoC usa Service Worker para el app shell y Cache Storage de Transformers.js para pesos/WASM; solicita almacenamiento persistente. La supervivencia offline tras reiniciar Chrome aún no está validada.
+- **Descargas:** los modelos no se incorporan al repositorio Git. La PoC usa Service Worker para el app shell y binarios ONNX Runtime servidos desde el mismo origen; Transformers.js mantiene los pesos del modelo en Cache Storage y se solicita almacenamiento persistente. La supervivencia offline tras reiniciar Chrome aún no está validada.
 - **Dependencias:** usar pnpm y conservar `pnpm-lock.yaml`; no introducir npm ni `package-lock.json`.
 
 ## Fase en curso: prueba de concepto TTS local
