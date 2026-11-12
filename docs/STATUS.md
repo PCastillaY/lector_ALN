@@ -29,7 +29,7 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - **Arquitectura:** extracción específica por formato, normalización común mediante `DocumentContent` y segmentación independiente.
 - **Privacidad:** local-first. Los documentos, el progreso y la inferencia TTS permanecen en el dispositivo. No se enviará texto a servicios de síntesis cloud.
 - **TTS:** motor neuronal descargable; idioma inicial español; voces femeninas y masculinas seleccionables con preview. Chrome de escritorio es el primer objetivo.
-- **Candidato inicial:** Kokoro-82M mediante `kokoro-js`; voces españolas `ef_dora`, `em_alex` y `em_santa`. Piper permanece como alternativa de investigación, pendiente de validar runtime y licencias por voz.
+- **Candidato inicial:** Kokoro-82M. La API estándar de `kokoro-js@1.2.1` no admite sus voces españolas; la PoC ahora prueba una ruta propia con fonemización eSpeak NG (`phonemizer`, locale `es`), inferencia ONNX directa y embeddings españoles. Piper permanece como alternativa de investigación, pendiente de validar runtime y licencias por voz.
 - **Backend:** WebAssembly/CPU Q8 como ruta de compatibilidad inicial; WebGPU/FP32 como alternativa experimental.
 - **Descargas:** los modelos no se incorporan al repositorio Git. La PoC usa Service Worker para el app shell y binarios ONNX Runtime servidos desde el mismo origen; Transformers.js mantiene los pesos del modelo en Cache Storage y se solicita almacenamiento persistente. La supervivencia offline tras reiniciar Chrome aún no está validada.
 - **Dependencias:** usar pnpm y conservar `pnpm-lock.yaml`; no introducir npm ni `package-lock.json`.
@@ -48,13 +48,15 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - [ ] `pnpm install --no-frozen-lockfile` completa y actualiza `pnpm-lock.yaml`.
 - [ ] `pnpm typecheck` y `pnpm build` pasan.
 - [ ] La PWA registra el Service Worker y la ruta `/lab/tts` abre tras recargar sin conexión.\n- [ ] Chrome descarga y carga el modelo sin errores.
-- [ ] Preview funcional para Dora, Alex y Santa.
+- [ ] Instalar y validar `phonemizer@1.2.1` con eSpeak NG español en navegador.
+- [ ] Confirmar que el tokenizador/modelo acepta los fonemas producidos para español.
+- [ ] Preview funcional para Dora, Alex y Santa mediante la ruta experimental.
 - [ ] Medir descarga, inicialización y latencia de generación.
 - [ ] Comparar WASM Q8 y WebGPU FP32, si está disponible.
 - [ ] Recargar la página y comprobar reutilización de recursos.
 - [ ] Desconectar Internet y comprobar síntesis offline.
 - [ ] Instalar/abrir la PWA, cerrar y reabrir Chrome sin red y comprobar persistencia del app shell, runtime y modelo.
-- [ ] Revisar licencias del runtime, modelo y recursos de voz antes de distribuirlos.
+- [ ] Revisar licencias del runtime, modelo, recursos de voz y bundle eSpeak NG antes de distribuirlos.
 
 ## Pendientes transversales
 
