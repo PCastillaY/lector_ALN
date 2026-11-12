@@ -78,7 +78,14 @@ export function TtsPocWorkbench() {
     setStatus("Preparando el runtime y descargando el modelo…")
 
     try {
-      // Keep model weights and ONNX Runtime WASM artifacts in the browser Cache API.\n      // This cache is separate from the service worker app-shell cache.\n      const { env } = await import("@huggingface/transformers")\n      env.useBrowserCache = true\n      env.useWasmCache = true\n      env.allowRemoteModels = true\n\n      const module = (await import("kokoro-js")) as unknown as KokoroModule
+      // Keep model weights and ONNX Runtime WASM artifacts in the browser Cache API.
+      // This cache is separate from the service worker app-shell cache.
+      const { env } = await import("@huggingface/transformers")
+      env.useBrowserCache = true
+      env.useWasmCache = true
+      env.allowRemoteModels = true
+
+      const module = (await import("kokoro-js")) as unknown as KokoroModule
       const engine = await module.KokoroTTS.from_pretrained(MODEL_ID, {
         dtype: backend === "webgpu" ? "fp32" : "q8",
         device: backend,
@@ -96,7 +103,13 @@ export function TtsPocWorkbench() {
       engineRef.current = engine
       setReady(true)
       setProgress(100)
-      const persisted = await navigator.storage?.persist?.().catch(() => false)\n      setPersistentStorage(persisted === true ? "granted" : persisted === false ? "denied" : "unsupported")\n      const estimate = await navigator.storage?.estimate?.().catch(() => undefined)\n      if (estimate?.usage !== undefined && estimate.quota !== undefined) {\n        setStorageUsage(`${(estimate.usage / 1024 / 1024).toFixed(0)} MB usados de ${(estimate.quota / 1024 / 1024).toFixed(0)} MB disponibles`)\n      }\n      setStatus(`Motor preparado mediante ${backend === "webgpu" ? "WebGPU" : "WebAssembly (CPU)"}.`)
+      const persisted = navigator.storage?.persist ? await navigator.storage.persist().catch(() => false) : undefined
+      setPersistentStorage(persisted === true ? "granted" : persisted === false ? "denied" : "unsupported")
+      const estimate = await navigator.storage?.estimate?.().catch(() => undefined)
+      if (estimate?.usage !== undefined && estimate.quota !== undefined) {
+        setStorageUsage(`${(estimate.usage / 1024 / 1024).toFixed(0)} MB usados de ${(estimate.quota / 1024 / 1024).toFixed(0)} MB disponibles`)
+      }
+      setStatus(`Motor preparado mediante ${backend === "webgpu" ? "WebGPU" : "WebAssembly (CPU)"}.`)
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Error desconocido al cargar el motor."
       setError(message)
@@ -190,7 +203,15 @@ export function TtsPocWorkbench() {
             </button>
             <span className="text-xs text-slate-500" aria-live="polite">{status}</span>
           </div>
-          {ready && (\n            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-5 text-emerald-900">\n              <p className="font-semibold">Caché local del motor activada</p>\n              <p>Transformers.js guarda los pesos del modelo y los binarios WASM en Cache Storage para reutilizarlos entre sesiones.</p>\n              <p className="mt-1">Almacenamiento persistente: {persistentStorage === "granted" ? "concedido" : persistentStorage === "denied" ? "no concedido; Chrome podría desalojar datos" : "no confirmado"}.</p>\n              {storageUsage && <p>{storageUsage}</p>}\n            </div>\n          )}\n          {loading && (
+          {ready && (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs leading-5 text-emerald-900">
+              <p className="font-semibold">Caché local del motor activada</p>
+              <p>Transformers.js guarda los pesos del modelo y los binarios WASM en Cache Storage para reutilizarlos entre sesiones.</p>
+              <p className="mt-1">Almacenamiento persistente: {persistentStorage === "granted" ? "concedido" : persistentStorage === "denied" ? "no concedido; Chrome podría desalojar datos" : "no confirmado"}.</p>
+              {storageUsage && <p>{storageUsage}</p>}
+            </div>
+          )}
+          {loading && (
             <div className="mt-4">
               <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                 <div className="h-full rounded-full bg-indigo-600 transition-all" style={{ width: progress === null ? "12%" : `${progress}%` }} />
@@ -240,7 +261,9 @@ export function TtsPocWorkbench() {
           <h2 className="font-semibold text-slate-900">Notas de esta prueba</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>La descarga inicial requiere Internet; la inferencia de texto se ejecuta en el navegador.</li>
-            <li>La PWA cachea el app shell y los recursos same-origin utilizados. Transformers.js mantiene por separado los pesos y binarios WASM en Cache Storage.</li>\n            <li>La persistencia del almacenamiento se solicita al navegador, pero este puede denegarla o eliminar datos; la prueba tras reiniciar Chrome sigue siendo obligatoria.</li>\n            <li>La primera visita, la instalación de la PWA y la descarga inicial del modelo requieren conexión. La prueba offline debe realizarse después de completar la carga del laboratorio y del modelo.</li>
+            <li>La PWA cachea el app shell y los recursos same-origin utilizados. Transformers.js mantiene por separado los pesos y binarios WASM en Cache Storage.</li>
+            <li>La persistencia del almacenamiento se solicita al navegador, pero este puede denegarla o eliminar datos; la prueba tras reiniciar Chrome sigue siendo obligatoria.</li>
+            <li>La primera visita, la instalación de la PWA y la descarga inicial del modelo requieren conexión. La prueba offline debe realizarse después de completar la carga del laboratorio y del modelo.</li>
             <li>El laboratorio no accede a los documentos ni modifica el progreso de lectura.</li>
             <li>WebAssembly y WebGPU se evalúan por separado; WebGPU utiliza pesos FP32 y puede descargar más datos.</li>
             <li>La prueba no integra todavía Piper ni constituye una decisión final del motor.</li>
