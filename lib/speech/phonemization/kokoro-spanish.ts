@@ -18,7 +18,7 @@ const KOKORO_SPANISH_SYMBOLS = new Set(
 
 const UNSTRESSED_WORDS = new Set([
   "el", "la", "los", "las", "un", "una", "unos", "unas",
-  "de", "en", "y", "o", "u", "que", "se", "le", "les",
+  "a", "al", "del", "de", "en", "y", "o", "u", "que", "se", "le", "les",
   "lo", "me", "te", "nos", "mi", "mis", "tu", "tus", "su", "sus",
 ])
 
@@ -92,7 +92,7 @@ function primaryStressStart(
     }
   }
 
-  const last = letters.at(-1) ?? ""
+  const last = letters[letters.length - 1] ?? ""
   const endsInVowel = isVowel(last)
   const stressFinal = !endsInVowel && last !== "n" && last !== "s"
   if (stressFinal || nuclei.length === 1) return nuclei[nuclei.length - 1].start
@@ -254,14 +254,6 @@ function phonemizeWord(source: string): string {
   return output
 }
 
-function isDecimalSeparator(characters: string[], index: number): boolean {
-  return (characters[index] === "." || characters[index] === ",") &&
-    index > 0 &&
-    index < characters.length - 1 &&
-    /\d/.test(characters[index - 1]) &&
-    /\d/.test(characters[index + 1])
-}
-
 /**
  * Convierte texto español a la secuencia fonética que espera Kokoro.
  * Conserva puntuación compatible y rechaza cifras para evitar que el
@@ -290,11 +282,6 @@ export function phonemizeSpanish(text: string): string {
 
   for (let index = 0; index < characters.length; index += 1) {
     const character = characters[index]
-
-    if (isDecimalSeparator(characters, index)) {
-      word += character
-      continue
-    }
 
     if (/\p{L}/u.test(character) || character === "'" || character === "’") {
       word += character
