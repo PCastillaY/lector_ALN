@@ -18,7 +18,7 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - [x] Persistencia local de posición por documento, restauración y migración IndexedDB.
 - [x] Validación manual de persistencia en TXT, PDF y EPUB, incluyendo recarga, varios documentos y documentos previos a la migración.
 - [x] PR #4 (PDF), PR #5 (EPUB), PR #6 (segmentación) y PR #7 (persistencia) integrados en `main`.
-- [ ] Prueba de concepto TTS: laboratorio aislado en `/lab/tts`; base PWA y caché de modelo añadidas en la rama, pendientes de instalación, build y validación offline real en Chrome.
+- [ ] Prueba de concepto TTS: laboratorio aislado en `/lab/tts`; base PWA y fonemizador español TypeScript añadidos en la rama, pendientes de instalación, pruebas, build, muestras auditivas y validación offline real en Chrome.
 - [ ] TTS no está integrado en el lector; no modificar aún la cola de lectura ni `ReadingProgress`.
 
 ## Decisiones de alcance vigentes
@@ -29,7 +29,7 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - **Arquitectura:** extracción específica por formato, normalización común mediante `DocumentContent` y segmentación independiente.
 - **Privacidad:** local-first. Los documentos, el progreso y la inferencia TTS permanecen en el dispositivo. No se enviará texto a servicios de síntesis cloud.
 - **TTS:** motor neuronal descargable; idioma inicial español; voces femeninas y masculinas seleccionables con preview. Chrome de escritorio es el primer objetivo.
-- **Candidato inicial:** Kokoro-82M. La API estándar de `kokoro-js@1.2.1` no admite sus voces españolas; la PoC ahora prueba una ruta propia con fonemización eSpeak NG (`phonemizer`, locale `es-419`), inferencia ONNX directa y embeddings españoles. Piper permanece como alternativa de investigación, pendiente de validar runtime y licencias por voz.
+- **Candidato inicial:** Kokoro-82M. La API estándar de `kokoro-js@1.2.1` no admite sus voces españolas; la PoC usa una ruta propia con fonemización española TypeScript, inferencia ONNX directa y embeddings españoles. Piper permanece como alternativa de investigación, pendiente de validar runtime y licencias por voz.
 - **Backend:** WebAssembly/CPU Q8 como ruta de compatibilidad inicial; WebGPU/FP32 como alternativa experimental.
 - **Descargas:** los modelos no se incorporan al repositorio Git. La PoC usa Service Worker para el app shell y binarios ONNX Runtime servidos desde el mismo origen; Transformers.js mantiene los pesos del modelo en Cache Storage y se solicita almacenamiento persistente. La supervivencia offline tras reiniciar Chrome aún no está validada.
 - **Dependencias:** usar pnpm y conservar `pnpm-lock.yaml`; no introducir npm ni `package-lock.json`.
@@ -48,15 +48,15 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - [ ] `pnpm install --no-frozen-lockfile` completa y actualiza `pnpm-lock.yaml`.
 - [ ] `pnpm typecheck` y `pnpm build` pasan.
 - [ ] La PWA registra el Service Worker y la ruta `/lab/tts` abre tras recargar sin conexión.\n- [ ] Chrome descarga y carga el modelo sin errores.
-- [ ] Instalar y validar `phonemizer@1.2.1` con eSpeak NG español en navegador.
-- [ ] Confirmar que el tokenizador/modelo acepta los fonemas producidos para español.
+- [x] Sustituir eSpeak NG/`phonemizer` por un módulo de fonemización española TypeScript local, con validación del inventario de símbolos.
+- [ ] Ejecutar las pruebas automatizadas del fonemizador y confirmar que el tokenizador no descarta ni trunca símbolos en navegador.
 - [ ] Preview funcional para Dora, Alex y Santa mediante la ruta experimental.
 - [ ] Medir descarga, inicialización y latencia de generación.
 - [ ] Comparar WASM Q8 y WebGPU FP32, si está disponible.
 - [ ] Recargar la página y comprobar reutilización de recursos.
 - [ ] Desconectar Internet y comprobar síntesis offline.
 - [ ] Instalar/abrir la PWA, cerrar y reabrir Chrome sin red y comprobar persistencia del app shell, runtime y modelo.
-- [ ] Revisar licencias del runtime, modelo, recursos de voz y bundle eSpeak NG antes de distribuirlos.
+- [ ] Revisar licencias del runtime, modelo y recursos de voz antes de distribuirlos; la referencia de reglas G2P conserva Apache-2.0 y NOTICE en `licenses/kokoro-micro/`.
 
 ## Pendientes transversales
 
@@ -337,3 +337,14 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 - **Pendiente de validación:** ejecutar en Codespaces `pnpm typecheck`, `pnpm test` y `pnpm build`; después abrir documentos TXT, PDF y EPUB desde la biblioteca y verificar navegación, resaltado, desplazamiento, límites y rendimiento.
 - La herramienta temporal `/dev/segmentation-test` continúa siendo solo de desarrollo.
 
+
+
+## Iteración G2P español — 2026-11-12
+
+- Se implementó `lib/speech/phonemization/kokoro-spanish.ts` en `feat/tts-browser-poc`, con reglas iniciales de español seseante/yeísta, acentuación, hiatos, dígrafos y puntuación.
+- Se retiró `phonemizer` de las dependencias directas. El lockfile debe sincronizarse localmente con `pnpm install --no-frozen-lockfile`.
+- La UI del laboratorio ahora muestra la secuencia fonética y verifica que el tokenizador no pierda caracteres.
+- Se añadió `tests/kokoro-spanish-phonemizer.test.cjs` y se incorporó al runner `scripts/run-tests.cjs`.
+- Se conservan licencia y avisos de atribución de `kokoro-micro` bajo `licenses/kokoro-micro/`.
+- **No validado aún:** no se ha ejecutado typecheck, suite, build ni prueba auditiva de esta iteración. No afirmar compatibilidad acústica ni naturalidad hasta generar y escuchar muestras de las tres voces.
+- **Limitación explícita:** la PoC rechaza textos que contienen cifras; la normalización de números, monedas, fechas, siglas y abreviaturas requiere una capa posterior.
