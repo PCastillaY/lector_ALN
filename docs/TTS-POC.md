@@ -60,7 +60,7 @@ Realizar las pruebas en Chrome de escritorio sobre el mismo equipo y con el mism
 3. Repetir en WebGPU (FP32), si está disponible.
 4. Esperar a que la capa PWA indique que el Service Worker está activo; recargar una vez con Internet para que la página y sus chunks queden bajo control del Service Worker.
 5. Instalar la PWA desde Chrome (si el navegador ofrece la opción) y abrirla al menos una vez con conexión.
-6. Desconectar Internet y navegar/recargar `/lab/tts`; comprobar que se carga el app shell.
+6. Generar al menos una muestra con cada voz (Dora, Alex y Santa) mientras haya conexión, para que se descarguen todos los recursos de voz requeridos.\n7. Desconectar Internet y navegar/recargar `/lab/tts`; comprobar que se carga el app shell.
 7. Volver a preparar el motor y generar audio sin red.
 8. Cerrar completamente Chrome, mantener la red desconectada, reabrir la PWA y repetir la síntesis.
 9. Registrar fallos, solicitudes de red, tamaño total descargado, estado de persistencia y backend efectivo.
