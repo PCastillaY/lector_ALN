@@ -231,7 +231,7 @@ export function TtsPocWorkbench() {
         import("phonemizer"),
         import("@huggingface/transformers"),
       ])
-      const phonemeParts = await phonemize(text.trim(), "es")
+      const phonemeParts = await phonemize(text.trim(), "es-419")
       const phonemeText = phonemeParts.join(" ").trim()
       if (!phonemeText) throw new Error("El fonemizador no produjo fonemas para el texto indicado.")
 
