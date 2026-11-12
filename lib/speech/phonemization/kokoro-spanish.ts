@@ -153,6 +153,11 @@ function phonemizeWord(source: string): string {
       index += 2
       continue
     }
+    if (current === "g" && next === "u" && ["a", "o"].includes(next2 ?? "")) {
+      output += "ɡw"
+      index += 2
+      continue
+    }
     if (current === "g" && (next === "u" || next === "ü") && ["e", "i", "é", "í"].includes(next2 ?? "")) {
       if (next === "ü") output += "ɡw"
       else output += "ɡ"
