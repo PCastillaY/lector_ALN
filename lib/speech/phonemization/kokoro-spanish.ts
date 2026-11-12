@@ -146,7 +146,7 @@ function phonemizeWord(source: string): string {
       index += 2
       continue
     }
-    if (current === "g" && next === "u" && ["e", "i", "é", "í"].includes(next2 ?? "")) {
+    if (current === "g" && (next === "u" || next === "ü") && ["e", "i", "é", "í"].includes(next2 ?? "")) {
       if (next === "ü") output += "ɡw"
       else output += "ɡ"
       index += next === "ü" ? 1 : 2
