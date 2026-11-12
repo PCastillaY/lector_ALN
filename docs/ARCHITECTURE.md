@@ -6,7 +6,7 @@ Aplicación web instalable de lectura asistida que importa documentos, presenta 
 ## Decisiones de producto
 - **Español primero:** interfaz, catálogo inicial de voces, mensajes y pruebas de calidad en español. La selección debe considerar variantes regionales; se priorizará español latinoamericano natural y comprensible para lectores de Perú, sin excluir otras variantes.
 - **Local-first para narración:** el motor neuronal local descargable será la opción principal. La narración básica no debe depender de una API remota, cuotas gratuitas, claves ni conexión permanente.
-- **Cloud opcional:** los proveedores remotos podrán añadirse como complemento para ofrecer voces alternativas o mayor naturalidad, siempre con límites y condiciones transparentes. Nunca serán requisito para leer un documento ya disponible localmente.
+- **Síntesis cloud: descartada:** no se implementarán proveedores de síntesis remota ni endpoints TTS. La conexión se utilizará únicamente para descargar la aplicación, el runtime y los paquetes de voz/modelo; el texto y la inferencia permanecerán en el dispositivo.
 - **Motor inicial candidato: Kokoro-82M:** probar primero su ejecución en navegador mediante un runtime compatible. Voces españolas identificadas: `ef_dora`, `em_alex` y `em_santa`. No asumir que su acento es latinoamericano ni que la calidad es suficiente hasta realizar pruebas auditivas.
 - **Alternativa de comparación: Piper:** evaluar voces regionales como `es_MX` y `es_AR`, además de `es_ES`. La disponibilidad, runtime web, rendimiento y licencia deben verificarse por modelo y voz; no asumir que todas las voces de un catálogo comparten licencia.
 - **Criterio de selección TTS:** naturalidad, inteligibilidad, pronunciación de español latinoamericano, prosodia narrativa, lectura de números/fechas/siglas, rendimiento en CPU/WebGPU, memoria, tamaño descargable, funcionamiento offline y licencias.
@@ -43,7 +43,7 @@ Implementaciones previstas:
 - `KokoroBrowserProvider`: primer candidato local para prueba de concepto en español.
 - `PiperProvider`: alternativa local a evaluar, especialmente por su catálogo de voces regionales.
 - `BrowserSpeechProvider`: fallback de compatibilidad; no prometer disponibilidad offline ni calidad uniforme, porque depende del navegador y del sistema operativo.
-- `RemoteTTSProvider`: complemento opcional, invocado desde rutas de servidor.
+- No implementar proveedores TTS remotos ni rutas de servidor para síntesis. La política de producto es síntesis exclusivamente local.
 - `SpeechQueue`: cola de fragmentos, cancelación, pausa/reanudación, reintentos y precarga. No sintetizar un libro completo en una sola petición.
 - Mantener la voz seleccionada asociada al idioma/variante del documento y permitir cambiarla durante la lectura.
 - No exponer API keys en el navegador. Aplicar límites de tamaño, tasa y coste en endpoints cloud.
@@ -69,7 +69,7 @@ Implementaciones previstas:
 - La biblioteca local debe seguir funcionando sin cuenta y sin conexión.
 
 ### 6. Backend
-- Route Handlers para importación cloud, extracción cuando sea necesario y síntesis TTS remota opcional.
+- Route Handlers solo para las funciones cloud que el producto incorpore explícitamente. No crear endpoints de síntesis TTS.
 - Validar extensión, MIME real, tamaño y estructura; tratar documentos como contenido no confiable.
 - No ejecutar macros ni contenido embebido. Sanitizar HTML de EPUB antes de renderizarlo.
 - OCR deliberadamente deshabilitado en la primera versión.
@@ -84,7 +84,7 @@ Implementaciones previstas:
 6. Segmentar texto y enviarlo a la cola TTS local.
 7. Reproducir audio y sincronizar el bloque activo.
 8. Guardar progreso y marcadores localmente o en la cuenta.
-9. Si el usuario lo elige y hay conexión, permitir cambiar a un proveedor remoto compatible.
+9. La síntesis permanece local; la conexión no interviene en la generación de audio.
 
 ## Modelo de datos inicial
 - `documents`: id, owner_id nullable, title, file_name, format, size_bytes, storage_mode, storage_key nullable, processing_status, created_at, updated_at.
@@ -128,7 +128,7 @@ public/
 2. **Lectura:** extracción y visor EPUB/PDF/TXT/DOCX; detección de PDF sin capa de texto.
 3. **Prueba de voces españolas:** prototipo comparativo de Kokoro y Piper; probar muestras narrativas, acento, pronunciación, rendimiento, consumo y licencias. Elegir motor principal solo tras evaluación.
 4. **Narración local y PWA offline:** proveedor elegido, cola de reproducción, selector y descarga/gestión de paquetes de voz; app shell instalable y prueba sin conexión.
-5. **Cuenta y nube opcional:** Supabase Auth/DB/Storage, RLS y sincronización explícita; proveedor remoto opcional si aporta valor.
+5. **Cuenta y sincronización opcional:** Supabase Auth/DB/Storage, RLS y sincronización explícita de biblioteca y progreso; sin síntesis remota.
 6. **Continuidad y optimización:** resaltado sincronizado, marcadores, progreso, preferencias, MOBI y documentos grandes. OCR solo si se aprueba como alcance separado.
 
 ## Criterios de aceptación
