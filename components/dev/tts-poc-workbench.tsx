@@ -105,7 +105,7 @@ export function TtsPocWorkbench() {
       setProgress(100)
       const persisted = navigator.storage?.persist ? await navigator.storage.persist().catch(() => false) : undefined
       setPersistentStorage(persisted === true ? "granted" : persisted === false ? "denied" : "unsupported")
-      const estimate = await navigator.storage?.estimate?.().catch(() => undefined)
+      const estimate = navigator.storage?.estimate ? await navigator.storage.estimate().catch(() => undefined) : undefined
       if (estimate?.usage !== undefined && estimate.quota !== undefined) {
         setStorageUsage(`${(estimate.usage / 1024 / 1024).toFixed(0)} MB usados de ${(estimate.quota / 1024 / 1024).toFixed(0)} MB disponibles`)
       }
