@@ -155,6 +155,7 @@ function phonemizeWord(source: string): string {
     }
     if (current === "g" && next === "u" && ["a", "o"].includes(next2 ?? "")) {
       output += "ɡw"
+      if (stressStart === index + 1) output += STRESS_MARK
       index += 2
       continue
     }
