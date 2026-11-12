@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { phonemizeSpanish } from "@/lib/speech/phonemization/kokoro-spanish"
 
 type VoiceId = "ef_dora" | "em_alex" | "em_santa"
 type Backend = "wasm" | "webgpu"
@@ -36,7 +37,7 @@ const VOICES: Array<{ id: VoiceId; name: string; gender: string; note: string }>
 ]
 
 const DEFAULT_TEXT =
-  "Buenos días. Esta es una prueba de lectura en español latinoamericano. En el año 2026, el documento contiene 125 páginas, tres capítulos y varias cifras: 12,5 %, S/ 1.250,50 y 7:30 p. m. ¿La pronunciación resulta clara y natural?"
+  "Buenos días. Esta es una prueba de lectura en español. En este ejemplo, el documento contiene ciento veinticinco páginas, tres capítulos y varias cantidades escritas con palabras. ¿La pronunciación resulta clara y natural?"
 
 const VOICE_ASSET_BASE =
   "https://huggingface.co/skillsafe-ai/kokoro-82m/resolve/main/voices"
@@ -150,6 +151,7 @@ export function TtsPocWorkbench() {
   const [progress, setProgress] = useState<number | null>(null)
   const [error, setError] = useState("")
   const [audioUrl, setAudioUrl] = useState("")
+  const [phonemes, setPhonemes] = useState("")
   const [persistentStorage, setPersistentStorage] = useState<"unknown" | "granted" | "denied" | "unsupported">("unknown")
   const [storageUsage, setStorageUsage] = useState<string>("")
 
@@ -227,17 +229,19 @@ export function TtsPocWorkbench() {
     audioRef.current?.pause()
 
     try {
-      const [{ phonemize }, { Tensor }] = await Promise.all([
-        import("phonemizer"),
-        import("@huggingface/transformers"),
-      ])
-      const phonemeParts = await phonemize(text.trim(), "es-419")
-      const phonemeText = phonemeParts.join(" ").trim()
-      if (!phonemeText) throw new Error("El fonemizador no produjo fonemas para el texto indicado.")
+      const { Tensor } = await import("@huggingface/transformers")
+      const phonemeText = phonemizeSpanish(text.trim())
+      setPhonemes(phonemeText)
 
       const { input_ids } = engineRef.current.tokenizer(phonemeText, { truncation: true })
       const tokenCount = input_ids.dims.at(-1) ?? 0
+      const expectedTokenCount = Array.from(phonemeText).length + 2
       if (tokenCount < 2) throw new Error("El texto no produjo suficientes tokens para sintetizar audio.")
+      if (tokenCount !== expectedTokenCount) {
+        throw new Error(
+          `El tokenizador descartó o truncó símbolos: se esperaban ${expectedTokenCount} tokens y produjo ${tokenCount}. Revisa la secuencia fonética o reduce la longitud del texto.`,
+        )
+      }
 
       const voiceData = await loadVoiceData(voiceId)
       const styleIndex = Math.min(Math.max(tokenCount - 2, 0), VOICE_STYLE_ROWS - 1) * STYLE_DIM
@@ -340,7 +344,7 @@ export function TtsPocWorkbench() {
 
         <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="font-semibold">2. Seleccionar y escuchar una voz</h2>
-          <p className="mt-1 text-sm text-slate-500">Las voces españolas usan fonemización eSpeak NG (es) y perfiles de estilo descargados una vez y guardados en una caché local independiente.</p>
+          <p className="mt-1 text-sm text-slate-500">El texto se convierte a fonemas en TypeScript dentro del navegador. Los perfiles de estilo españoles se descargan una vez y se guardan en una caché local independiente.</p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {VOICES.map((voice) => (
@@ -353,7 +357,7 @@ export function TtsPocWorkbench() {
           </div>
 
           <label htmlFor="sample-text" className="mt-5 block text-sm font-medium">Texto de prueba</label>
-          <textarea id="sample-text" value={text} onChange={(event) => setText(event.target.value)} rows={5} maxLength={1200} className="mt-2 w-full rounded-xl border border-slate-200 p-3 text-sm leading-6 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
+          <textarea id="sample-text" value={text} onChange={(event) => { setText(event.target.value); setPhonemes("") }} rows={5} maxLength={1200} className="mt-2 w-full rounded-xl border border-slate-200 p-3 text-sm leading-6 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/>
           <div className="mt-3 flex flex-wrap items-center gap-4">
             <label className="flex items-center gap-2 text-sm text-slate-600">
               Velocidad
@@ -364,6 +368,13 @@ export function TtsPocWorkbench() {
               {generating ? "Generando muestra…" : `Previsualizar ${selectedVoice.name}`}
             </button>
           </div>
+
+          {phonemes && (
+            <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <summary className="cursor-pointer text-xs font-semibold text-slate-700">Inspeccionar secuencia fonética Kokoro</summary>
+              <p className="mt-2 break-words font-mono text-xs leading-6 text-slate-600">{phonemes}</p>
+            </details>
+          )}
 
           {audioUrl && (
             <div className="mt-5 rounded-xl bg-slate-50 p-3">
@@ -377,7 +388,9 @@ export function TtsPocWorkbench() {
         <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-600 shadow-sm sm:p-6">
           <h2 className="font-semibold text-slate-900">Notas de esta prueba</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>La descarga inicial requiere Internet; la fonemización y la inferencia se ejecutan en el navegador.</li>
+            <li>La descarga inicial requiere Internet; la fonemización TypeScript y la inferencia se ejecutan en el navegador.</li>
+            <li>La fonemización inicial aplica reglas de español seseante/yeísta. Todavía no normaliza cifras, monedas, fechas, siglas ni abreviaturas: para esta prueba, escribe esos elementos con palabras.</li>
+            <li>Antes de inferir, se valida que todos los símbolos fonéticos pertenezcan al inventario de Kokoro y que el tokenizador no haya descartado ni truncado caracteres.</li>
             <li>La PWA cachea el app shell y los recursos same-origin utilizados. Transformers.js mantiene por separado los pesos y binarios WASM en Cache Storage; los tres perfiles españoles se guardan en lector-aln-kokoro-spanish-voices-v1.</li>
             <li>La persistencia del almacenamiento se solicita al navegador, pero este puede denegarla o eliminar datos; la prueba tras reiniciar Chrome sigue siendo obligatoria.</li>
             <li>La primera visita, la instalación de la PWA y la descarga inicial del modelo requieren conexión. La prueba offline debe realizarse después de completar la carga del laboratorio y del modelo.</li>
