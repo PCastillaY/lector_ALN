@@ -260,7 +260,7 @@ function phonemizeWord(source: string): string {
  * tokenizador las descarte silenciosamente.
  */
 export function phonemizeSpanish(text: string): string {
-  const input = text.trim()
+  const input = text.trim().normalize("NFC")
   if (!input) throw new Error("Escribe un texto para generar la muestra.")
   if (/\d/u.test(input)) {
     throw new Error(
@@ -291,7 +291,7 @@ export function phonemizeSpanish(text: string): string {
     flushWord()
 
     if (character === "¿" || character === "¡") continue
-    if (";:,.!?—…\"()“”".includes(character)) {
+    if (";:,.!?—–…\"()“”".includes(character)) {
       output.push(character === "–" ? "—" : character)
     } else if (/\s/u.test(character)) {
       if (output.length > 0 && output[output.length - 1] !== " ") output.push(" ")
