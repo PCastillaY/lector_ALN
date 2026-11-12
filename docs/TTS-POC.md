@@ -13,8 +13,8 @@ El error `Voice "em_santa" not found` no era un fallo de la descarga ni de Chrom
 Por tanto, no se deben cambiar los IDs españoles por voces inglesas. La PoC ahora evita `KokoroTTS.generate()` y utiliza directamente las piezas de bajo nivel:
 
 1. `kokoro-js` carga el modelo ONNX y el tokenizador mediante Transformers.js.
-2. `phonemizer@1.2.1` genera fonemas con eSpeak NG usando el locale `es-419`.
-3. El tokenizador de Kokoro convierte la secuencia fonética en `input_ids`.
+2. `lib/speech/phonemization/kokoro-spanish.ts` convierte el texto a la secuencia fonética Kokoro mediante reglas TypeScript locales (seseo/yeísmo).
+3. Se valida cada símbolo contra el inventario admitido por Kokoro y se comprueba que el tokenizador no descarte ni trunque caracteres.
 4. Se carga el embedding español de la voz seleccionada y se extrae el vector de estilo correspondiente a la longitud del texto.
 5. El modelo ONNX genera la forma de onda; la PoC la convierte a WAV en el navegador.
 
@@ -24,7 +24,7 @@ Esta es una adaptación experimental del flujo de inferencia, no una integració
 
 - Modelo: `onnx-community/Kokoro-82M-v1.0-ONNX`.
 - Runtime de modelo/tokenizador: `kokoro-js@1.2.1` + `@huggingface/transformers@3.8.1`.
-- Fonemizador: `phonemizer@1.2.1`, eSpeak NG con locale `es-419`.
+- Fonemizador: módulo TypeScript local `lib/speech/phonemization/kokoro-spanish.ts`; sin runtime eSpeak NG.
 - Embeddings españoles: `skillsafe-ai/kokoro-82m/voices`.
 - Voces: `ef_dora` (Dora), `em_alex` (Alex), `em_santa` (Santa).
 - Backend inicial: WebAssembly con Q8.
@@ -75,15 +75,15 @@ No se debe confundir la caché del app shell con la caché del modelo ni con la 
 - `kokoro-js`: Apache-2.0.
 - `@huggingface/transformers`: revisar la licencia de la versión fijada y sus dependencias.
 - Modelo Kokoro-82M y perfiles de voz: el repositorio de modelos declara Apache-2.0 y atribuye pesos/voz al proyecto upstream; conservar avisos y revisar los términos de cada artefacto.
-- `phonemizer`: el paquete npm declara Apache-2.0. Antes de distribuir, auditar expresamente la licencia del código eSpeak NG y de los datos fonéticos incluidos en el bundle WASM; no asumir que la licencia del wrapper cubre todos los componentes.
+- Fonemización española: implementación TypeScript propia basada en reglas compatibles con el inventario fonético Kokoro. Se conserva la atribución y licencia Apache-2.0 de la referencia técnica `DavidValin/kokoro-micro` en `licenses/kokoro-micro/`. No se incorpora eSpeak NG ni su runtime GPL.
 - No incorporar modelos ni embeddings al repositorio Git.
 
 ## Protocolo de evaluación
 
-1. Ejecutar `pnpm install --no-frozen-lockfile` para actualizar el lockfile con la dependencia directa `phonemizer`.
-2. Ejecutar `pnpm typecheck`, `pnpm test` y `pnpm build`.
+1. Ejecutar `pnpm install --no-frozen-lockfile` para retirar `phonemizer` del lockfile y sincronizar dependencias.
+2. Ejecutar `pnpm typecheck`, `pnpm test` y `pnpm build`; la suite incluye pruebas de regresión del fonemizador español.
 3. Ejecutar `pnpm start` y abrir `/lab/tts` en Chrome.
-4. Preparar Kokoro mediante WebAssembly Q8 y comprobar que el fonemizador reconoce español.
+4. Preparar Kokoro mediante WebAssembly Q8 y comprobar la secuencia fonética española.
 5. Generar una muestra con Dora, Alex y Santa. Confirmar que cada archivo de voz supera la verificación SHA-256.
 6. Escuchar y evaluar pronunciación, inteligibilidad, acento percibido, ritmo, prosodia, artefactos y números.
 7. Repetir en WebGPU FP32, si está disponible.
@@ -100,7 +100,7 @@ Añadir después un párrafo narrativo largo con diálogo, nombres propios, abre
 
 ## Riesgos y criterios de decisión
 
-La nueva ruta de síntesis aún no está validada en navegador. En particular, se debe comprobar que los fonemas generados por eSpeak NG `es` coinciden con el inventario esperado por el tokenizador/modelo y que la salida conserva calidad suficiente. La referencia de Kokoro en español utiliza Misaki `EspeakG2P(language="es")`; esta PoC usa `es-419` de eSpeak NG para orientar la fonemización a español latinoamericano. El fonemizador JS debe compararse auditivamente y con un pequeño corpus de referencia antes de aceptar la equivalencia.
+La nueva ruta de síntesis aún no está validada en navegador. El fonemizador TypeScript aplica una primera aproximación de español seseante/yeísta y valida el inventario de símbolos; todavía debe contrastarse con muestras auditivas y un corpus de referencia. Las reglas de pronunciación no sustituyen la normalización de texto: cifras, monedas, fechas, siglas y abreviaturas se rechazan explícitamente hasta implementar una capa separada que las convierta a palabras. La variante regional efectiva también debe validarse escuchando las voces, no solo por las reglas de G2P.
 
 No seleccionar motor principal hasta comprobar:
 - Calidad auditiva aceptable para lectura prolongada.
@@ -110,3 +110,17 @@ No seleccionar motor principal hasta comprobar:
 - Uso de memoria razonable en Chrome.
 - Funcionamiento offline después de instalación.
 - Licencias compatibles con el uso y distribución previstos.
+
+
+## Fonemización española local — 2026-11-12
+
+Se sustituyó el experimento con `phonemizer`/eSpeak NG por un módulo TypeScript local:
+
+- `lib/speech/phonemization/kokoro-spanish.ts` implementa reglas de grafema a fonema para español seseante/yeísta.
+- La ruta de preview ya no carga ni ejecuta `phonemizer`; se elimina esa dependencia directa de `package.json`.
+- Se comprueba que cada símbolo de la secuencia pertenece al inventario Kokoro y que la longitud de tokens producida coincide con la secuencia más los dos tokens de borde.
+- La interfaz permite inspeccionar la secuencia fonética generada.
+- Se añadieron pruebas `node:test` para puntuación, c/ll/ch, acentos, hiatos, gue/gui, diéresis, vocabulario y rechazo explícito de cifras.
+- La implementación toma como referencia técnica el front-end español de `DavidValin/kokoro-micro`. Se conserva su `LICENSE` y `NOTICE` en `licenses/kokoro-micro/`. No se incorpora eSpeak NG ni su runtime GPL.
+
+**Estado: implementado en la rama, todavía no validado.** Ejecutar instalación/actualización de lockfile, typecheck, tests y build en Codespaces. Después validar muestras de Dora, Alex y Santa. La normalización numérica y de abreviaturas queda fuera de esta iteración.
