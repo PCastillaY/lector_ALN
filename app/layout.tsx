@@ -24,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className="antialiased">
+        <PwaBootstrap />
         {children}
         {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
