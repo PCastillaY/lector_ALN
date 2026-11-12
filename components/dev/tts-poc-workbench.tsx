@@ -82,8 +82,8 @@ export function TtsPocWorkbench() {
       // This cache is separate from the service worker app-shell cache.
       const { env } = await import("@huggingface/transformers")
       env.useBrowserCache = true
-      env.useWasmCache = true
       env.allowRemoteModels = true
+      env.backends.onnx.wasm.wasmPaths = "/onnxruntime/"
 
       const module = (await import("kokoro-js")) as unknown as KokoroModule
       const engine = await module.KokoroTTS.from_pretrained(MODEL_ID, {
