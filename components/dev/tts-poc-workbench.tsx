@@ -5,10 +5,6 @@ import { useEffect, useRef, useState } from "react"
 type VoiceId = "ef_dora" | "em_alex" | "em_santa"
 type Backend = "wasm" | "webgpu"
 
-interface KokoroAudio {
-  toBlob(): Blob
-}
-
 interface KokoroInstance {
   tokenizer(text: string, options: { truncation: boolean }): { input_ids: { dims: number[] } }
   model(inputs: {
@@ -48,7 +44,28 @@ const VOICE_CACHE_NAME = "lector-aln-kokoro-spanish-voices-v1"
 const STYLE_DIM = 256
 const SAMPLE_RATE = 24000
 const VOICE_STYLE_ROWS = 510
+const VOICE_ASSET_SHA256: Record<VoiceId, string> = {
+  ef_dora: "f66ec66bd295acb18372e37008533a9a3228483ccd294e7538d5d9294ac9a532",
+  em_alex: "27809e9eafdcbcfff90a3016c697568676531de2a2c39cee29c96c7bd6b83e95",
+  em_santa: "ad43b774e1ca24d05c6161297d8aeb770ac3d29bb95daf516727af5f7d543683",
+}
 const voiceDataMemoryCache = new Map<VoiceId, Float32Array>()
+
+async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", buffer.slice(0))
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")
+}
+
+async function validateVoiceBuffer(buffer: ArrayBuffer, voice: VoiceId): Promise<void> {
+  const expectedBytes = VOICE_STYLE_ROWS * STYLE_DIM * Float32Array.BYTES_PER_ELEMENT
+  if (buffer.byteLength !== expectedBytes) {
+    throw new Error(`El archivo de voz ${voice} tiene un tamaño inesperado.`)
+  }
+  const actualHash = await sha256Hex(buffer)
+  if (actualHash !== VOICE_ASSET_SHA256[voice]) {
+    throw new Error(`La verificación SHA-256 del perfil ${voice} no coincide con el manifiesto.`)
+  }
+}
 
 async function loadVoiceData(voice: VoiceId): Promise<Float32Array> {
   const inMemory = voiceDataMemoryCache.get(voice)
@@ -58,9 +75,15 @@ async function loadVoiceData(voice: VoiceId): Promise<Float32Array> {
   const cache = await caches.open(VOICE_CACHE_NAME)
   const cached = await cache.match(url)
   if (cached) {
-    const data = new Float32Array(await cached.arrayBuffer())
-    voiceDataMemoryCache.set(voice, data)
-    return data
+    const cachedBuffer = await cached.arrayBuffer()
+    try {
+      await validateVoiceBuffer(cachedBuffer, voice)
+      const data = new Float32Array(cachedBuffer)
+      voiceDataMemoryCache.set(voice, data)
+      return data
+    } catch {
+      await cache.delete(url)
+    }
   }
 
   const response = await fetch(url)
@@ -69,9 +92,7 @@ async function loadVoiceData(voice: VoiceId): Promise<Float32Array> {
   }
 
   const buffer = await response.arrayBuffer()
-  if (buffer.byteLength !== VOICE_STYLE_ROWS * STYLE_DIM * Float32Array.BYTES_PER_ELEMENT) {
-    throw new Error(`El archivo de voz ${voice} tiene un tamaño inesperado; no se almacenará en caché.`)
-  }
+  await validateVoiceBuffer(buffer, voice)
 
   await cache.put(url, new Response(buffer.slice(0), {
     headers: { "Content-Type": "application/octet-stream" },
