@@ -1,24 +1,25 @@
 # Lector ALN — estado del proyecto
 
-> **Última actualización:** 2026-11-11  
-> **Rama de trabajo vigente:** `feat/reading-progress`  
-> **Último PR integrado:** PR #6 — integración de segmentación en el lector.  
-> **Commit de merge:** `72f3046212908406aeeb5f882ed99ef9acdab8da`  
-> **Fase en curso:** persistencia local del progreso de lectura.  
+> **Última actualización:** 2026-11-12  
+> **Rama de trabajo vigente:** `feat/tts-browser-poc`  
+> **Último PR integrado:** PR #7 — persistencia de posición de lectura.  
+> **Fase en curso:** prueba de concepto TTS local en Chrome.  
 > **Criterio rector:** buscar excelencia verificable; no confundir una demo funcional con un producto terminado.
 
 ## Estado vigente
 
-La ruta **importar → extraer → segmentar → leer** está integrada en `main` para TXT, PDF con capa de texto y EPUB. La extracción y lectura se realizan localmente.
+La ruta **importar → extraer → segmentar → leer → persistir posición** está integrada en `main` para TXT, PDF con capa de texto y EPUB. La extracción, lectura y persistencia de posición se realizan localmente.
 
 - [x] TXT: extracción local y lectura.
 - [x] PDF: extracción local de la capa de texto y lectura mediante PDF.js.
 - [x] EPUB: extracción local siguiendo el orden del spine, con metadatos, capítulos y offsets.
-- [x] Segmentación de texto por bloques, conservando texto y offsets UTF-16.
+- [x] Segmentación por bloques, conservando texto y offsets UTF-16.
 - [x] Navegación anterior/siguiente, resaltado, desplazamiento y barra de progreso.
-- [x] PR #4 (PDF), PR #5 (EPUB) y PR #6 (segmentación integrada) fusionados en `main`.
-- [ ] Persistencia del progreso: implementación en curso en `feat/reading-progress`; pendiente de typecheck, suite completa, build y validación manual en Codespaces.
-- [ ] TTS: no iniciar hasta cerrar y validar la persistencia.
+- [x] Persistencia local de posición por documento, restauración y migración IndexedDB.
+- [x] Validación manual de persistencia en TXT, PDF y EPUB, incluyendo recarga, varios documentos y documentos previos a la migración.
+- [x] PR #4 (PDF), PR #5 (EPUB), PR #6 (segmentación) y PR #7 (persistencia) integrados en `main`.
+- [ ] Prueba de concepto TTS: laboratorio aislado en `/lab/tts`, pendiente de instalación de dependencia, ejecución en Codespaces y validación en Chrome.
+- [ ] TTS no está integrado en el lector; no modificar aún la cola de lectura ni `ReadingProgress`.
 
 ## Decisiones de alcance vigentes
 
@@ -26,41 +27,41 @@ La ruta **importar → extraer → segmentar → leer** está integrada en `main
 - **OCR:** aplazado. PDF escaneados y texto contenido exclusivamente en imágenes no se reconocen mediante OCR.
 - **DOCX/MOBI:** fuera del alcance actual.
 - **Arquitectura:** extracción específica por formato, normalización común mediante `DocumentContent` y segmentación independiente.
-- **Privacidad:** local-first; los documentos y el progreso permanecen en el navegador. No se envían a servicios externos.
+- **Privacidad:** local-first. Los documentos, el progreso y la inferencia TTS permanecen en el dispositivo. No se enviará texto a servicios de síntesis cloud.
+- **TTS:** motor neuronal descargable; idioma inicial español; voces femeninas y masculinas seleccionables con preview. Chrome de escritorio es el primer objetivo.
+- **Candidato inicial:** Kokoro-82M mediante `kokoro-js`; voces españolas `ef_dora`, `em_alex` y `em_santa`. Piper permanece como alternativa de investigación, pendiente de validar runtime y licencias por voz.
+- **Backend:** WebAssembly/CPU Q8 como ruta de compatibilidad inicial; WebGPU/FP32 como alternativa experimental.
+- **Descargas:** los modelos no se incorporan al repositorio Git. La prueba usa la caché del runtime; producción deberá incorporar gestión explícita de modelos, versiones, integridad, cuotas y persistencia.
 - **Dependencias:** usar pnpm y conservar `pnpm-lock.yaml`; no introducir npm ni `package-lock.json`.
 
-## Fase en curso: persistencia del progreso
+## Fase en curso: prueba de concepto TTS local
 
-Objetivo: restaurar la posición al volver a abrir un documento, sin depender únicamente del índice global del segmento.
+- Se añadió una página experimental en `/lab/tts`, independiente del lector.
+- Se incorporó un banco de prueba de Kokoro-82M con selector de voz, texto común editable, velocidad, descarga/preparación y preview generado localmente.
+- La prueba ofrece backend WebAssembly Q8 y WebGPU FP32 cuando está disponible.
+- Se añadió `kokoro-js@1.2.1` a `package.json`. **El lockfile aún debe actualizarse en Codespaces con pnpm antes de validar instalación/build/CI.**
+- No se han descargado modelos al repositorio ni se ha modificado IndexedDB o el progreso de lectura.
+- No se ha comprobado aún que la caché del runtime sobreviva al reinicio de Chrome ni que la síntesis funcione sin conexión. Son criterios de prueba, no capacidades ya verificadas.
 
-Diseño implementado en la rama:
+### Criterios de aceptación de la prueba
 
-- Se amplía IndexedDB de versión 1 a versión 2, creando el almacén independiente `reading_progress`. La migración conserva el almacén `documents` y los archivos existentes.
-- Cada progreso se identifica por `documentId` y conserva versión de esquema, sección, bloque de origen, índices auxiliares, orden, offset local dentro del bloque y fecha de actualización.
-- La restauración prioriza la identidad estable de sección/bloque y el offset local; utiliza índices y orden como fallback si cambia la estructura.
-- El progreso se guarda con debounce de 500 ms y se intenta guardar también en `pagehide`.
-- El segmento activo se actualiza según la posición visible del lector; la búsqueda del segmento visible usa búsqueda binaria sobre los elementos renderizados.
-- La eliminación de un documento elimina su progreso en la misma transacción IndexedDB.
-- Se añadieron pruebas unitarias del anclaje y la resolución de posición. Aún no se han ejecutado en Codespaces ni se ha validado IndexedDB real en navegador.
-
-### Criterios de aceptación
-
-- [ ] Abrir un documento sin progreso inicia en el primer segmento.
-- [ ] Navegar a otro segmento y cerrar/reabrir restaura la posición.
-- [ ] Desplazarse manualmente actualiza el segmento activo y la posición guardada.
-- [ ] El progreso de un documento no afecta a otros.
-- [ ] TXT, PDF y EPUB restauran la posición correctamente.
-- [ ] La migración desde IndexedDB versión 1 conserva todos los documentos importados.
-- [ ] Eliminar un documento elimina también su progreso.
-- [ ] Typecheck, suite completa y build pasan.
-- [ ] No se introduce TTS ni sincronización cloud.
+- [ ] `pnpm install --no-frozen-lockfile` completa y actualiza `pnpm-lock.yaml`.
+- [ ] `pnpm typecheck` y `pnpm build` pasan.
+- [ ] Chrome descarga y carga el modelo sin errores.
+- [ ] Preview funcional para Dora, Alex y Santa.
+- [ ] Medir descarga, inicialización y latencia de generación.
+- [ ] Comparar WASM Q8 y WebGPU FP32, si está disponible.
+- [ ] Recargar la página y comprobar reutilización de recursos.
+- [ ] Desconectar Internet y comprobar síntesis offline.
+- [ ] Cerrar y reabrir Chrome sin red y comprobar persistencia de los modelos.
+- [ ] Revisar licencias del runtime, modelo y recursos de voz antes de distribuirlos.
 
 ## Pendientes transversales
 
 - [ ] Añadir lint compatible con Next.js 16.
 - [ ] Ampliar pruebas reales de IndexedDB en navegador, cuota agotada y ciclo de vida de transacciones.
 - [ ] Revisar manejo de cuota y errores de almacenamiento.
-- [ ] Mantener pruebas de regresión de importación, extracción, segmentación y lectura de TXT/PDF/EPUB.
+- [ ] Mantener pruebas de regresión de importación, extracción, segmentación, lectura y progreso de TXT/PDF/EPUB.
 
 ---
 
