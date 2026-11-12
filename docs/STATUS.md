@@ -348,3 +348,8 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 - Se conservan licencia y avisos de atribución de `kokoro-micro` bajo `licenses/kokoro-micro/`.
 - **No validado aún:** no se ha ejecutado typecheck, suite, build ni prueba auditiva de esta iteración. No afirmar compatibilidad acústica ni naturalidad hasta generar y escuchar muestras de las tres voces.
 - **Limitación explícita:** la PoC rechaza textos que contienen cifras; la normalización de números, monedas, fechas, siglas y abreviaturas requiere una capa posterior.
+
+
+### Corrección G2P posterior a la primera ejecución — 2026-11-12
+
+La primera ejecución en Codespaces encontró dos fallos de regresión en la posición del acento: el marcador se insertaba delante del núcleo vocálico en lugar de delante del ataque silábico. Se ajustó el cálculo del inicio de sílaba y el tratamiento de `gu`/`gü`; las expectativas de las pruebas ahora reflejan el acento sobre el ataque correspondiente. **Pendiente:** volver a ejecutar `pnpm test`, `pnpm typecheck` y `pnpm build` en Codespaces. No se considera validado hasta obtener esos resultados.
