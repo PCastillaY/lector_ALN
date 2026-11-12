@@ -85,7 +85,7 @@ No se debe confundir la caché del app shell con la caché del modelo ni con la 
 3. Ejecutar `pnpm start` y abrir `/lab/tts` en Chrome.
 4. Preparar Kokoro mediante WebAssembly Q8 y comprobar la secuencia fonética española.
 5. Generar una muestra con Dora, Alex y Santa. Confirmar que cada archivo de voz supera la verificación SHA-256.
-6. Escuchar y evaluar pronunciación, inteligibilidad, acento percibido, ritmo, prosodia, artefactos y números.
+6. Escuchar y evaluar pronunciación, inteligibilidad, acento percibido, ritmo, prosodia y artefactos. La evaluación de números queda pendiente hasta implementar su normalización.
 7. Repetir en WebGPU FP32, si está disponible.
 8. Medir descarga, inicialización, tiempo hasta el primer audio, velocidad de generación y memoria aproximada.
 9. Recargar con Internet y confirmar que los recursos se reutilizan desde caché.
@@ -94,7 +94,7 @@ No se debe confundir la caché del app shell con la caché del modelo ni con la 
 
 ### Texto común de evaluación
 
-> Buenos días. Esta es una prueba de lectura en español latinoamericano. En el año 2026, el documento contiene 125 páginas, tres capítulos y varias cifras: 12,5 %, S/ 1.250,50 y 7:30 p. m. ¿La pronunciación resulta clara y natural?
+> Buenos días. Esta es una prueba de lectura en español. En este ejemplo, el documento contiene ciento veinticinco páginas, tres capítulos y varias cantidades escritas con palabras. ¿La pronunciación resulta clara y natural?
 
 Añadir después un párrafo narrativo largo con diálogo, nombres propios, abreviaturas y números. Comparar también una versión del mismo texto con cifras y cantidades escritas con palabras para separar la calidad de voz de la normalización numérica.
 
