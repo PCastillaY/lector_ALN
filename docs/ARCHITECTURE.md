@@ -42,11 +42,11 @@ Contrato `TTSProvider` independiente del proveedor:
 Implementaciones previstas:
 - `KokoroBrowserProvider`: primer candidato local para prueba de concepto en español.
 - `PiperProvider`: alternativa local a evaluar, especialmente por su catálogo de voces regionales.
-- `BrowserSpeechProvider`: fallback de compatibilidad; no prometer disponibilidad offline ni calidad uniforme, porque depende del navegador y del sistema operativo.
+- `BrowserSpeechProvider`: no se considera fallback automático. Solo podrá ofrecerse si se verifica que la voz está instalada localmente y funciona sin red; nunca se utilizarán voces o servicios remotos.
 - No implementar proveedores TTS remotos ni rutas de servidor para síntesis. La política de producto es síntesis exclusivamente local.
 - `SpeechQueue`: cola de fragmentos, cancelación, pausa/reanudación, reintentos y precarga. No sintetizar un libro completo en una sola petición.
 - Mantener la voz seleccionada asociada al idioma/variante del documento y permitir cambiarla durante la lectura.
-- No exponer API keys en el navegador. Aplicar límites de tamaño, tasa y coste en endpoints cloud.
+- No crear claves, endpoints ni dependencias de proveedores de síntesis remota.
 
 ### 4. PWA, modelos y almacenamiento local
 - Implementar manifiesto y service worker para instalar la aplicación y cachear el app shell y recursos estáticos necesarios.
