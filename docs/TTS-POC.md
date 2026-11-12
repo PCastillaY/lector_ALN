@@ -13,7 +13,7 @@ El error `Voice "em_santa" not found` no era un fallo de la descarga ni de Chrom
 Por tanto, no se deben cambiar los IDs españoles por voces inglesas. La PoC ahora evita `KokoroTTS.generate()` y utiliza directamente las piezas de bajo nivel:
 
 1. `kokoro-js` carga el modelo ONNX y el tokenizador mediante Transformers.js.
-2. `phonemizer@1.2.1` genera fonemas con eSpeak NG usando el locale `es`.
+2. `phonemizer@1.2.1` genera fonemas con eSpeak NG usando el locale `es-419`.
 3. El tokenizador de Kokoro convierte la secuencia fonética en `input_ids`.
 4. Se carga el embedding español de la voz seleccionada y se extrae el vector de estilo correspondiente a la longitud del texto.
 5. El modelo ONNX genera la forma de onda; la PoC la convierte a WAV en el navegador.
@@ -24,7 +24,7 @@ Esta es una adaptación experimental del flujo de inferencia, no una integració
 
 - Modelo: `onnx-community/Kokoro-82M-v1.0-ONNX`.
 - Runtime de modelo/tokenizador: `kokoro-js@1.2.1` + `@huggingface/transformers@3.8.1`.
-- Fonemizador: `phonemizer@1.2.1`, eSpeak NG con locale `es`.
+- Fonemizador: `phonemizer@1.2.1`, eSpeak NG con locale `es-419`.
 - Embeddings españoles: `skillsafe-ai/kokoro-82m/voices`.
 - Voces: `ef_dora` (Dora), `em_alex` (Alex), `em_santa` (Santa).
 - Backend inicial: WebAssembly con Q8.
@@ -100,7 +100,7 @@ Añadir después un párrafo narrativo largo con diálogo, nombres propios, abre
 
 ## Riesgos y criterios de decisión
 
-La nueva ruta de síntesis aún no está validada en navegador. En particular, se debe comprobar que los fonemas generados por eSpeak NG `es` coinciden con el inventario esperado por el tokenizador/modelo y que la salida conserva calidad suficiente. La referencia de Kokoro en español utiliza Misaki `EspeakG2P(language="es")`; el fonemizador JS debe compararse auditivamente y con un pequeño corpus de referencia antes de aceptar la equivalencia.
+La nueva ruta de síntesis aún no está validada en navegador. En particular, se debe comprobar que los fonemas generados por eSpeak NG `es` coinciden con el inventario esperado por el tokenizador/modelo y que la salida conserva calidad suficiente. La referencia de Kokoro en español utiliza Misaki `EspeakG2P(language="es")`; esta PoC usa `es-419` de eSpeak NG para orientar la fonemización a español latinoamericano. El fonemizador JS debe compararse auditivamente y con un pequeño corpus de referencia antes de aceptar la equivalencia.
 
 No seleccionar motor principal hasta comprobar:
 - Calidad auditiva aceptable para lectura prolongada.
