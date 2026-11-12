@@ -18,7 +18,7 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - [x] Persistencia local de posición por documento, restauración y migración IndexedDB.
 - [x] Validación manual de persistencia en TXT, PDF y EPUB, incluyendo recarga, varios documentos y documentos previos a la migración.
 - [x] PR #4 (PDF), PR #5 (EPUB), PR #6 (segmentación) y PR #7 (persistencia) integrados en `main`.
-- [ ] Prueba de concepto TTS: laboratorio aislado en `/lab/tts`, pendiente de instalación de dependencia, ejecución en Codespaces y validación en Chrome.
+- [ ] Prueba de concepto TTS: laboratorio aislado en `/lab/tts`; base PWA y caché de modelo añadidas en la rama, pendientes de instalación, build y validación offline real en Chrome.
 - [ ] TTS no está integrado en el lector; no modificar aún la cola de lectura ni `ReadingProgress`.
 
 ## Decisiones de alcance vigentes
@@ -31,7 +31,7 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - **TTS:** motor neuronal descargable; idioma inicial español; voces femeninas y masculinas seleccionables con preview. Chrome de escritorio es el primer objetivo.
 - **Candidato inicial:** Kokoro-82M mediante `kokoro-js`; voces españolas `ef_dora`, `em_alex` y `em_santa`. Piper permanece como alternativa de investigación, pendiente de validar runtime y licencias por voz.
 - **Backend:** WebAssembly/CPU Q8 como ruta de compatibilidad inicial; WebGPU/FP32 como alternativa experimental.
-- **Descargas:** los modelos no se incorporan al repositorio Git. La prueba usa la caché del runtime; producción deberá incorporar gestión explícita de modelos, versiones, integridad, cuotas y persistencia.
+- **Descargas:** los modelos no se incorporan al repositorio Git. La PoC usa Service Worker para el app shell y Cache Storage de Transformers.js para pesos/WASM; solicita almacenamiento persistente. La supervivencia offline tras reiniciar Chrome aún no está validada.
 - **Dependencias:** usar pnpm y conservar `pnpm-lock.yaml`; no introducir npm ni `package-lock.json`.
 
 ## Fase en curso: prueba de concepto TTS local
@@ -39,7 +39,7 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - Se añadió una página experimental en `/lab/tts`, independiente del lector.
 - Se incorporó un banco de prueba de Kokoro-82M con selector de voz, texto común editable, velocidad, descarga/preparación y preview generado localmente.
 - La prueba ofrece backend WebAssembly Q8 y WebGPU FP32 cuando está disponible.
-- Se añadió `kokoro-js@1.2.1` a `package.json`. **El lockfile aún debe actualizarse en Codespaces con pnpm antes de validar instalación/build/CI.**
+- Se añadieron `kokoro-js@1.2.1` y `@huggingface/transformers@3.8.1` a `package.json`; el lockfile debe actualizarse en Codespaces con pnpm antes de validar instalación/build/CI.\n- Se incorporó manifiesto PWA, icono SVG, Service Worker y estado de conectividad/registro en la interfaz. El Service Worker precachea las rutas de aplicación y guarda recursos estáticos same-origin a medida que se solicitan.\n- Se habilitó explícitamente la caché de navegador y de binarios WASM de Transformers.js; al completar la carga se solicita almacenamiento persistente y se informa la cuota estimada.
 - No se han descargado modelos al repositorio ni se ha modificado IndexedDB o el progreso de lectura.
 - No se ha comprobado aún que la caché del runtime sobreviva al reinicio de Chrome ni que la síntesis funcione sin conexión. Son criterios de prueba, no capacidades ya verificadas.
 
@@ -47,13 +47,13 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 
 - [ ] `pnpm install --no-frozen-lockfile` completa y actualiza `pnpm-lock.yaml`.
 - [ ] `pnpm typecheck` y `pnpm build` pasan.
-- [ ] Chrome descarga y carga el modelo sin errores.
+- [ ] La PWA registra el Service Worker y la ruta `/lab/tts` abre tras recargar sin conexión.\n- [ ] Chrome descarga y carga el modelo sin errores.
 - [ ] Preview funcional para Dora, Alex y Santa.
 - [ ] Medir descarga, inicialización y latencia de generación.
 - [ ] Comparar WASM Q8 y WebGPU FP32, si está disponible.
 - [ ] Recargar la página y comprobar reutilización de recursos.
 - [ ] Desconectar Internet y comprobar síntesis offline.
-- [ ] Cerrar y reabrir Chrome sin red y comprobar persistencia de los modelos.
+- [ ] Instalar/abrir la PWA, cerrar y reabrir Chrome sin red y comprobar persistencia del app shell, runtime y modelo.
 - [ ] Revisar licencias del runtime, modelo y recursos de voz antes de distribuirlos.
 
 ## Pendientes transversales
