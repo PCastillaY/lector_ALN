@@ -1,8 +1,9 @@
 /**
  * Fonemización española para el vocabulario de Kokoro-82M.
  *
- * Implementación TypeScript independiente para el navegador. La referencia
- * fonética y de compatibilidad es el front-end Romance de kokoro-micro:
+ * Adaptación TypeScript para navegador del enfoque fonético del front-end
+ * español de kokoro-micro. Este archivo fue reescrito para el proyecto y
+ * modificado respecto de la referencia:
  * https://github.com/DavidValin/kokoro-micro (Apache-2.0).
  *
  * Perfil: español seseante y yeísta. No pretende resolver todavía nombres
