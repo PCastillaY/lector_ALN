@@ -26,7 +26,7 @@ El proyecto no ofrecerá síntesis cloud. La conexión inicial se utiliza exclus
 La PoC incorpora dos mecanismos independientes:
 
 1. **App shell (Service Worker):** `public/sw.js` cachea las rutas HTML `/` y `/lab/tts`, el manifiesto, el icono y los recursos estáticos same-origin de Next.js que se solicitan mientras el Service Worker controla la página. Las navegaciones usan red primero y recurren a la copia local si no hay conexión.
-2. **Modelo y runtime (Transformers.js):** se activa explícitamente `env.useBrowserCache` y `env.useWasmCache`. Transformers.js almacena pesos y artefactos WASM en Cache Storage; esta caché es distinta de la caché del Service Worker. Los recursos del modelo pueden proceder de Hugging Face y el runtime gestiona su caché de navegador.
+2. **Modelo y runtime (Transformers.js):** se activa explícitamente `env.useBrowserCache`. Los pesos y archivos del modelo se almacenan en Cache Storage. Los binarios ONNX Runtime WASM se copian durante `predev`/`prebuild` desde la dependencia instalada a `public/onnxruntime/`, y `wasmPaths` los sirve desde el mismo origen para que el Service Worker pueda cachearlos. Esta caché es distinta de la caché interna del modelo de Transformers.js.
 
 Después de la descarga, la aplicación solicita `navigator.storage.persist()` y muestra el resultado y la estimación de uso/cuota. La concesión no está garantizada y el navegador aún puede eliminar datos en determinadas circunstancias.
 
