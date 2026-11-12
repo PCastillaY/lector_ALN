@@ -100,7 +100,43 @@ function primaryStressStart(
   return nuclei[nuclei.length - 2].start
 }
 
+function isSilentLetter(letters: string[], index: number): boolean {
+  return letters[index] === "h" || isSilentU(letters, index)
+}
+
+function syllableOnsetStart(
+  letters: string[],
+  nuclei: Array<{ start: number; end: number }>,
+  nucleusStart: number,
+): number {
+  const nucleusIndex = nuclei.findIndex((nucleus) => nucleus.start === nucleusStart)
+  const previousNucleusEnd = nucleusIndex > 0 ? nuclei[nucleusIndex - 1].end : 0
+  const consonantIndices: number[] = []
+
+  for (let index = previousNucleusEnd; index < nucleusStart; index += 1) {
+    if (!isVowel(letters[index]) && !isSilentLetter(letters, index)) {
+      consonantIndices.push(index)
+    }
+  }
+
+  if (consonantIndices.length === 0) return nucleusStart
+  if (consonantIndices.length === 1) return consonantIndices[0]
+
+  const first = consonantIndices[consonantIndices.length - 2]
+  const last = consonantIndices[consonantIndices.length - 1]
+  const cluster = letters[first] + letters[last]
+  const legalOnsets = new Set([
+    "pr", "br", "pl", "bl", "fr", "fl", "tr", "dr", "kr", "kl", "gr", "gl",
+  ])
+
+  // En grupos de tres consonantes, la primera suele cerrar la sílaba
+  // anterior y las dos últimas forman el ataque (ins-tan-te).
+  if (legalOnsets.has(cluster)) return first
+  return last
+}
+
 function secondaryStressStarts(
+  letters: string[],
   nuclei: Array<{ start: number; end: number }>,
   primaryStart: number | undefined,
 ): Set<number> {
@@ -110,7 +146,7 @@ function secondaryStressStarts(
   const primaryIndex = nuclei.findIndex((nucleus) => nucleus.start === primaryStart)
   nuclei.forEach((nucleus, index) => {
     if (index % 2 === 0 && index !== primaryIndex && Math.abs(index - primaryIndex) !== 1) {
-      result.add(nucleus.start)
+      result.add(syllableOnsetStart(letters, nuclei, nucleus.start))
     }
   })
   return result
@@ -124,8 +160,11 @@ function phonemizeWord(source: string): string {
 
   const nuclei = vowelNuclei(letters)
   const isFunctionWord = UNSTRESSED_WORDS.has(source.toLocaleLowerCase("es"))
-  const stressStart = isFunctionWord ? undefined : primaryStressStart(letters, nuclei)
-  const secondary = secondaryStressStarts(nuclei, stressStart)
+  const stressNucleusStart = isFunctionWord ? undefined : primaryStressStart(letters, nuclei)
+  const stressStart = stressNucleusStart === undefined
+    ? undefined
+    : syllableOnsetStart(letters, nuclei, stressNucleusStart)
+  const secondary = secondaryStressStarts(letters, nuclei, stressNucleusStart)
 
   let output = ""
   let index = 0
@@ -156,14 +195,13 @@ function phonemizeWord(source: string): string {
     }
     if (current === "g" && next === "u" && ["a", "o"].includes(next2 ?? "")) {
       output += "ɡw"
-      if (stressStart === index + 1) output += STRESS_MARK
       index += 2
       continue
     }
     if (current === "g" && (next === "u" || next === "ü") && ["e", "i", "é", "í"].includes(next2 ?? "")) {
       if (next === "ü") output += "ɡw"
       else output += "ɡ"
-      index += next === "ü" ? 1 : 2
+      index += 2
       continue
     }
     if (current === "g" && ["e", "i", "é", "í"].includes(next ?? "")) {
