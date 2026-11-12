@@ -1,8 +1,10 @@
 import type { DocumentRecord, StoredDocument } from "@/lib/documents/types"
+import type { ReadingProgress } from "@/lib/documents/reading-progress"
 
 const DATABASE_NAME = "lector-aln"
-const DATABASE_VERSION = 1
+const DATABASE_VERSION = 2
 const STORE_NAME = "documents"
+const PROGRESS_STORE_NAME = "reading_progress"
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -18,6 +20,9 @@ function openDatabase(): Promise<IDBDatabase> {
       const database = request.result
       if (!database.objectStoreNames.contains(STORE_NAME)) {
         database.createObjectStore(STORE_NAME, { keyPath: "id" })
+      }
+      if (!database.objectStoreNames.contains(PROGRESS_STORE_NAME)) {
+        database.createObjectStore(PROGRESS_STORE_NAME, { keyPath: "documentId" })
       }
     }
     request.onsuccess = () => {
@@ -96,11 +101,43 @@ export async function deleteLocalDocument(id: string): Promise<void> {
   const database = await openDatabase()
   try {
     await new Promise<void>((resolve, reject) => {
-      const transaction = database.transaction(STORE_NAME, "readwrite")
+      const transaction = database.transaction([STORE_NAME, PROGRESS_STORE_NAME], "readwrite")
       transaction.objectStore(STORE_NAME).delete(id)
+      transaction.objectStore(PROGRESS_STORE_NAME).delete(id)
       transaction.oncomplete = () => resolve()
       transaction.onerror = () => reject(transaction.error ?? new Error("No se pudo eliminar el documento."))
       transaction.onabort = () => reject(transaction.error ?? new Error("Se canceló la eliminación del documento."))
+    })
+  } finally {
+    database.close()
+  }
+}
+
+
+export async function getReadingProgress(documentId: string): Promise<ReadingProgress | null> {
+  const database = await openDatabase()
+  try {
+    return await new Promise<ReadingProgress | null>((resolve, reject) => {
+      const transaction = database.transaction(PROGRESS_STORE_NAME, "readonly")
+      const request = transaction.objectStore(PROGRESS_STORE_NAME).get(documentId)
+      request.onsuccess = () => resolve((request.result as ReadingProgress | undefined) ?? null)
+      request.onerror = () => reject(request.error ?? new Error("No se pudo recuperar el progreso de lectura."))
+      transaction.onabort = () => reject(transaction.error ?? new Error("Se canceló la recuperación del progreso."))
+    })
+  } finally {
+    database.close()
+  }
+}
+
+export async function saveReadingProgress(progress: ReadingProgress): Promise<void> {
+  const database = await openDatabase()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction(PROGRESS_STORE_NAME, "readwrite")
+      transaction.objectStore(PROGRESS_STORE_NAME).put(progress)
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error ?? new Error("No se pudo guardar el progreso de lectura."))
+      transaction.onabort = () => reject(transaction.error ?? new Error("Se canceló el guardado del progreso."))
     })
   } finally {
     database.close()

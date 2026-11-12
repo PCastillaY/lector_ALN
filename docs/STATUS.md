@@ -1,71 +1,66 @@
 # Lector ALN — estado del proyecto
 
-> **Última actualización:** 2026-11-09  
-> **Rama de trabajo vigente:** `feat/text-segmentation` (basada en `main`)  
-> **Último PR integrado:** PR #5 — extracción EPUB local (Squash and merge).  
-> **Commit de PR #5:** `b29cfc4f769ab66921adefb6fe458605d396efaf`  
-> **Fase en curso:** segmentación de texto, antes de implementar TTS.  
+> **Última actualización:** 2026-11-11  
+> **Rama de trabajo vigente:** `feat/reading-progress`  
+> **Último PR integrado:** PR #6 — integración de segmentación en el lector.  
+> **Commit de merge:** `72f3046212908406aeeb5f882ed99ef9acdab8da`  
+> **Fase en curso:** persistencia local del progreso de lectura.  
 > **Criterio rector:** buscar excelencia verificable; no confundir una demo funcional con un producto terminado.
 
-Este documento es el registro operativo del proyecto. La sección «Estado vigente» prevalece sobre los registros históricos posteriores, que conservan el contexto de cada fase y pueden contener decisiones ya superadas.
+## Estado vigente
 
-## Estado vigente — 2026-11-06
-
-### Estado ejecutivo
-
-La ruta **importar → extraer → leer** está implementada para los tres formatos incluidos en el alcance actual: TXT, PDF con capa de texto y EPUB. Las tres implementaciones están integradas en `main`. La extracción se realiza localmente.
+La ruta **importar → extraer → segmentar → leer** está integrada en `main` para TXT, PDF con capa de texto y EPUB. La extracción y lectura se realizan localmente.
 
 - [x] TXT: extracción local y lectura.
 - [x] PDF: extracción local de la capa de texto y lectura mediante PDF.js.
 - [x] EPUB: extracción local siguiendo el orden del spine, con metadatos, capítulos y offsets.
-- [x] PR #4 — PDF: fusionado en `main` mediante squash; commit `937897de5350295da5c4f6b81141197032ec634c`.
-- [x] PR #5 — EPUB: fusionado en `main` mediante squash; commit `b29cfc4f769ab66921adefb6fe458605d396efaf`.
-- [x] Validación manual de EPUB: casos sencillos, multicapítulo, español, estructura, texto con imágenes, archivo con firma incorrecta, contenido sin texto legible y EPUB extenso. La prueba de archivo dañado comprobó específicamente el rechazo por firma incompatible con la extensión; no equivale a probar toda posible corrupción interna del ZIP.
-- [x] En el último ciclo de EPUB se verificaron localmente `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm test` (31 pruebas) y `pnpm build`; CI de GitHub Actions y despliegue Vercel reportaron éxito para el commit de la rama antes de fusionar.
+- [x] Segmentación de texto por bloques, conservando texto y offsets UTF-16.
+- [x] Navegación anterior/siguiente, resaltado, desplazamiento y barra de progreso.
+- [x] PR #4 (PDF), PR #5 (EPUB) y PR #6 (segmentación integrada) fusionados en `main`.
+- [ ] Persistencia del progreso: implementación en curso en `feat/reading-progress`; pendiente de typecheck, suite completa, build y validación manual en Codespaces.
+- [ ] TTS: no iniciar hasta cerrar y validar la persistencia.
 
-### Decisiones de alcance vigentes
+## Decisiones de alcance vigentes
 
-- **Formatos:** limitar el producto por ahora a TXT, PDF con capa de texto y EPUB. No añadir DOCX, MOBI ni otros formatos en esta etapa.
-- **OCR:** aplazado para todos los formatos. Los PDF escaneados y el texto contenido exclusivamente en imágenes no se reconocerán mediante OCR.
-- **Narración:** todavía no implementada.
-- **Arquitectura:** mantener extracción específica por formato y normalización común mediante `DocumentContent`.
-- **Privacidad:** conservar el enfoque local-first; no enviar documentos a servicios externos como parte de la extracción.
+- **Formatos:** TXT, PDF con capa de texto y EPUB.
+- **OCR:** aplazado. PDF escaneados y texto contenido exclusivamente en imágenes no se reconocen mediante OCR.
+- **DOCX/MOBI:** fuera del alcance actual.
+- **Arquitectura:** extracción específica por formato, normalización común mediante `DocumentContent` y segmentación independiente.
+- **Privacidad:** local-first; los documentos y el progreso permanecen en el navegador. No se envían a servicios externos.
+- **Dependencias:** usar pnpm y conservar `pnpm-lock.yaml`; no introducir npm ni `package-lock.json`.
 
-### Fase en curso: segmentación de texto
+## Fase en curso: persistencia del progreso
 
-La rama `feat/text-segmentation` se creó desde el último commit de `main`. El objetivo es implementar una capa independiente que transforme el contenido normalizado en segmentos adecuados para narración futura, sin integrar todavía un motor TTS.
+Objetivo: restaurar la posición al volver a abrir un documento, sin depender únicamente del índice global del segmento.
 
-**Validación incremental (2026-11-09):** el usuario confirmó en Codespaces que `pnpm typecheck`, `pnpm test` (49/49) y `pnpm build` pasan en el commit `0d129682a64428c99bd27c43f4a20c9aeaa3fb03`. La corrección cubrió el cierre de oración después de abreviaturas compuestas como `S. A.`, sin romper los casos de iniciales, nombres, enumeraciones y offsets ya probados.
+Diseño implementado en la rama:
 
-**Revisión de robustez en curso:** se ampliaron las heurísticas para iniciales de una sola letra y comienzos de oración, se incorporaron casos para razones sociales `S. A.`, `S. R. L.` y `S. L.`, abreviaturas editoriales junto a cifras, offsets contiguos, bloques extensos y pruebas de integración entre segmentación y extracción TXT/PDF/EPUB. También se precomputan los marcadores de listas por línea para evitar volver a dividir todo el bloque por cada signo de puntuación. Esta ampliación todavía **no está validada por el usuario**; requiere typecheck, suite completa y build en Codespaces.
+- Se amplía IndexedDB de versión 1 a versión 2, creando el almacén independiente `reading_progress`. La migración conserva el almacén `documents` y los archivos existentes.
+- Cada progreso se identifica por `documentId` y conserva versión de esquema, sección, bloque de origen, índices auxiliares, orden, offset local dentro del bloque y fecha de actualización.
+- La restauración prioriza la identidad estable de sección/bloque y el offset local; utiliza índices y orden como fallback si cambia la estructura.
+- El progreso se guarda con debounce de 500 ms y se intenta guardar también en `pagehide`.
+- El segmento activo se actualiza según la posición visible del lector; la búsqueda del segmento visible usa búsqueda binaria sobre los elementos renderizados.
+- La eliminación de un documento elimina su progreso en la misma transacción IndexedDB.
+- Se añadieron pruebas unitarias del anclaje y la resolución de posición. Aún no se han ejecutado en Codespaces ni se ha validado IndexedDB real en navegador.
 
-**Implementación en la rama:** contrato `TextSegment`, segmentador por bloques/oraciones, referencias a sección y bloque, orden global y partición por longitud preferida. La salida conserva cada fragmento como un slice exacto del bloque original. Los offsets se calculan sumando el índice UTF-16 local al offset inicial del bloque; no se presupone que TXT, PDF y EPUB compartan una única cadena fuente global. No se ha integrado TTS ni se ha fusionado la rama.
+### Criterios de aceptación
 
-Alcance propuesto para esa fase:
+- [ ] Abrir un documento sin progreso inicia en el primer segmento.
+- [ ] Navegar a otro segmento y cerrar/reabrir restaura la posición.
+- [ ] Desplazarse manualmente actualiza el segmento activo y la posición guardada.
+- [ ] El progreso de un documento no afecta a otros.
+- [ ] TXT, PDF y EPUB restauran la posición correctamente.
+- [ ] La migración desde IndexedDB versión 1 conserva todos los documentos importados.
+- [ ] Eliminar un documento elimina también su progreso.
+- [ ] Typecheck, suite completa y build pasan.
+- [ ] No se introduce TTS ni sincronización cloud.
 
-- [x] Definir el contrato `TextSegment` y sus identificadores (implementación inicial en revisión).
-- [x] Segmentar bloques por oraciones, respetando el orden del documento (implementación inicial; pendiente de validación).
-- [x] Preservar offsets relativos al bloque y referencias a sección/capítulo (semántica documentada; pendiente de validar con todos los extractores).
-- [x] Establecer límite configurable preferido sin cortar palabras ni perder puntuación (tokens individuales pueden exceder el límite).
-- [ ] Tratar abreviaturas, decimales, diálogos, listas, encabezados y puntuación compleja.
-- [ ] Añadir pruebas para TXT, PDF y EPUB, incluyendo documentos extensos y textos en español.
-- [ ] Verificar que la segmentación no altera el texto original ni rompe la continuidad entre segmentos.
-
-**Criterio de cierre:** los segmentos deben reconstruir el texto original en el orden correcto, mantener offsets coherentes, respetar límites de sección y superar pruebas automatizadas. Solo después se iniciará la integración TTS.
-
-### Fases posteriores (no iniciar todavía)
-
-1. Diseñar el contrato desacoplado `TTSProvider` y evaluar motores/voices.
-2. Implementar reproducción, pausa, reanudación, cancelación, cola y manejo de errores.
-3. Sincronizar narración con resaltado y desplazamiento del lector.
-4. Evaluar persistencia de progreso y funcionamiento offline de voces.
-
-### Pendientes transversales no bloqueantes para la siguiente fase
+## Pendientes transversales
 
 - [ ] Añadir lint compatible con Next.js 16.
 - [ ] Ampliar pruebas reales de IndexedDB en navegador, cuota agotada y ciclo de vida de transacciones.
 - [ ] Revisar manejo de cuota y errores de almacenamiento.
-- [ ] Mantener pruebas de regresión de importación, extracción y lectura de TXT/PDF/EPUB.
+- [ ] Mantener pruebas de regresión de importación, extracción, segmentación y lectura de TXT/PDF/EPUB.
 
 ---
 
@@ -338,3 +333,4 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 - No se implementó reproducción TTS, persistencia del progreso ni sincronización de posición.
 - **Pendiente de validación:** ejecutar en Codespaces `pnpm typecheck`, `pnpm test` y `pnpm build`; después abrir documentos TXT, PDF y EPUB desde la biblioteca y verificar navegación, resaltado, desplazamiento, límites y rendimiento.
 - La herramienta temporal `/dev/segmentation-test` continúa siendo solo de desarrollo.
+

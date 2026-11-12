@@ -37,6 +37,7 @@ try {
     path.join(root, "lib/documents/extraction/epub.ts"),
     path.join(root, "lib/documents/segmentation/types.ts"),
     path.join(root, "lib/documents/segmentation/segmenter.ts"),
+    path.join(root, "lib/documents/reading-progress.ts"),
     path.join(root, "lib/documents/extract.ts"),
   ])
 
@@ -48,6 +49,7 @@ try {
       path.join(root, "tests/pdf-extraction.test.cjs"),
       path.join(root, "tests/epub-extraction.test.cjs"),
       path.join(root, "tests/text-segmentation.test.cjs"),
+      path.join(root, "tests/reading-progress.test.cjs"),
     ], {
       ...process.env,
       LECTOR_TEST_BUILD: tempDir,

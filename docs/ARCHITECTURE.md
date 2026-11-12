@@ -60,6 +60,9 @@ Implementaciones previstas:
 
 ### 5. Persistencia y sincronización
 - Local: IndexedDB para binarios y metadatos documentales; almacenamiento adecuado para modelos y paquetes de voz.
+- El progreso local se almacena en un object store independiente `reading_progress`, identificado por `documentId`; la migración de base de datos debe conservar íntegro el object store de documentos.
+- El ancla de lectura conserva versión de esquema, sección y bloque de origen, offset UTF-16 local dentro del bloque, índices auxiliares, orden y fecha de actualización. La restauración prioriza sección/bloque/offset y usa el orden como fallback; no depende únicamente del índice global de segmento.
+- El guardado se realiza con debounce y en `pagehide` como mejor esfuerzo. El progreso se elimina atómicamente junto con el documento local.
 - Cuenta: Supabase Auth + PostgreSQL para usuarios, biblioteca, progreso y marcadores; Supabase Storage para archivos privados.
 - La capa `DocumentRepository` abstrae ambos backends. No duplicar archivos automáticamente al iniciar sesión: ofrecer migración/sincronización explícita.
 - Storage privado, RLS por propietario y URLs firmadas de corta duración.

@@ -5,9 +5,11 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, LoaderCircle } from "lucide-react"
 import type { DocumentContent, DocumentFormat } from "@/lib/documents/types"
 import type { TextSegment } from "@/lib/documents/segmentation/types"
+import { createReadingProgress, resolveReadingProgressIndex } from "@/lib/documents/reading-progress"
+import type { ReadingProgress } from "@/lib/documents/reading-progress"
 import { segmentDocument } from "@/lib/documents/segmentation/segmenter"
 import { extractDocumentContent } from "@/lib/documents/extract"
-import { getLocalDocument } from "@/lib/storage/local/document-store"
+import { getLocalDocument, getReadingProgress, saveReadingProgress } from "@/lib/storage/local/document-store"
 
 interface ReaderWorkspaceProps {
   documentId: string
@@ -23,7 +25,10 @@ export function ReaderWorkspace({ documentId }: ReaderWorkspaceProps) {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
   const [activeSegmentIndex, setActiveSegmentIndex] = useState(0)
+  const [progressReady, setProgressReady] = useState(false)
   const segmentElements = useRef<Map<string, HTMLSpanElement>>(new Map())
+  const pendingProgress = useRef<ReadingProgress | null>(null)
+  const shouldScrollToActive = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -34,6 +39,9 @@ export function ReaderWorkspace({ documentId }: ReaderWorkspaceProps) {
       setContent(null)
       setFormat(null)
       setActiveSegmentIndex(0)
+      setProgressReady(false)
+      pendingProgress.current = null
+      shouldScrollToActive.current = false
       segmentElements.current.clear()
 
       try {
@@ -41,8 +49,21 @@ export function ReaderWorkspace({ documentId }: ReaderWorkspaceProps) {
         if (!document) throw new Error("El documento no existe en esta biblioteca local.")
         const extracted = await extractDocumentContent(document)
         if (!cancelled) {
+          let savedProgress: ReadingProgress | null = null
+          try {
+            savedProgress = await getReadingProgress(documentId)
+          } catch (progressError) {
+            console.warn("No se pudo recuperar el progreso de lectura.", progressError)
+          }
+
+          if (cancelled) return
+          const extractedSegments = segmentDocument(extracted)
+          const restoredIndex = resolveReadingProgressIndex(extractedSegments, savedProgress)
+          shouldScrollToActive.current = savedProgress !== null
           setContent(extracted)
           setFormat(document.format)
+          setActiveSegmentIndex(restoredIndex)
+          setProgressReady(true)
         }
       } catch (cause) {
         if (!cancelled) {
@@ -76,14 +97,83 @@ export function ReaderWorkspace({ documentId }: ReaderWorkspaceProps) {
   const activeSegment = segments[activeSegmentIndex] ?? null
 
   useEffect(() => {
-    if (!activeSegment) return
+    if (!activeSegment || !shouldScrollToActive.current) return
+    shouldScrollToActive.current = false
     segmentElements.current.get(activeSegment.id)?.scrollIntoView({
       behavior: "smooth",
       block: "center",
     })
   }, [activeSegment?.id])
 
+  useEffect(() => {
+    if (!progressReady || !activeSegment || !content) return
+    const sourceBlock = content.sections[activeSegment.sectionIndex]?.blocks[activeSegment.blockIndex]
+    if (!sourceBlock) return
+
+    const progress = createReadingProgress(documentId, activeSegment, sourceBlock.startOffset)
+    pendingProgress.current = progress
+    const timeout = window.setTimeout(() => {
+      void saveReadingProgress(progress).catch((cause) => {
+        console.error("No se pudo guardar el progreso de lectura.", cause)
+      })
+    }, 500)
+
+    return () => window.clearTimeout(timeout)
+  }, [documentId, content, progressReady, activeSegment?.id])
+
+  useEffect(() => {
+    const savePendingProgress = () => {
+      if (pendingProgress.current) {
+        void saveReadingProgress(pendingProgress.current).catch((cause) => {
+          console.error("No se pudo guardar el progreso al cerrar el lector.", cause)
+        })
+      }
+    }
+    window.addEventListener("pagehide", savePendingProgress)
+    return () => window.removeEventListener("pagehide", savePendingProgress)
+  }, [])
+
+  useEffect(() => {
+    if (segments.length === 0) return
+    let frame = 0
+
+    const updateFromViewport = () => {
+      if (frame) return
+      frame = window.requestAnimationFrame(() => {
+        frame = 0
+        const anchorY = window.innerHeight * 0.35
+        let low = 0
+        let high = segments.length - 1
+        let visibleIndex = high
+
+        while (low <= high) {
+          const middle = Math.floor((low + high) / 2)
+          const element = segmentElements.current.get(segments[middle].id)
+          if (!element) {
+            low = middle + 1
+            continue
+          }
+          if (element.getBoundingClientRect().bottom > anchorY) {
+            visibleIndex = middle
+            high = middle - 1
+          } else {
+            low = middle + 1
+          }
+        }
+
+        setActiveSegmentIndex((current) => current === visibleIndex ? current : visibleIndex)
+      })
+    }
+
+    window.addEventListener("scroll", updateFromViewport, { passive: true })
+    return () => {
+      window.removeEventListener("scroll", updateFromViewport)
+      if (frame) window.cancelAnimationFrame(frame)
+    }
+  }, [segments])
+
   function moveSegment(direction: -1 | 1) {
+    shouldScrollToActive.current = true
     setActiveSegmentIndex((current) => Math.min(
       Math.max(current + direction, 0),
       Math.max(segments.length - 1, 0),
