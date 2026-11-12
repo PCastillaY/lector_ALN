@@ -83,7 +83,7 @@ export function TtsPocWorkbench() {
       const { env } = await import("@huggingface/transformers")
       env.useBrowserCache = true
       env.allowRemoteModels = true
-      env.backends.onnx.wasm.wasmPaths = "/onnxruntime/"
+      env.backends.onnx.wasm = { ...env.backends.onnx.wasm, wasmPaths: "/onnxruntime/" }
 
       const module = (await import("kokoro-js")) as unknown as KokoroModule
       const engine = await module.KokoroTTS.from_pretrained(MODEL_ID, {
