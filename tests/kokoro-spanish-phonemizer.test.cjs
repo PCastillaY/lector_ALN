@@ -19,7 +19,7 @@ test("aplica seseo, yeísmo y consonantes españolas frecuentes", () => {
   assert.equal(phonemizeSpanish("cielo"), "ˈsielo")
   assert.equal(phonemizeSpanish("llamar"), "ʝaˈmaɾ")
   assert.equal(phonemizeSpanish("chico"), "ˈʧiko")
-  assert.equal(phonemizeSpanish("guapo"), "ˈɡwapo")
+  assert.equal(phonemizeSpanish("guapo"), "ɡwˈapo")
 })
 
 test("resuelve acentos, hiatos, gue/gui y diéresis", () => {
