@@ -4,7 +4,7 @@
   "short_name": "Lector ALN",
   "description": "Biblioteca y lectura asistida local-first.",
   "lang": "es",
-  "start_url": "/",
+  "start_url": "/lab/tts",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f7f8fc",
