@@ -46,12 +46,18 @@ function startsHiatus(left: string, right: string): boolean {
   return false
 }
 
+function isSilentU(letters: string[], index: number): boolean {
+  return letters[index] === "u" &&
+    (letters[index - 1] === "q" || letters[index - 1] === "g") &&
+    ["e", "i", "é", "í"].includes(letters[index + 1] ?? "")
+}
+
 function vowelNuclei(letters: string[]): Array<{ start: number; end: number }> {
   const nuclei: Array<{ start: number; end: number }> = []
   let index = 0
 
   while (index < letters.length) {
-    if (!isVowel(letters[index])) {
+    if (!isVowel(letters[index]) || isSilentU(letters, index)) {
       index += 1
       continue
     }
@@ -61,6 +67,7 @@ function vowelNuclei(letters: string[]): Array<{ start: number; end: number }> {
     while (
       index < letters.length &&
       isVowel(letters[index]) &&
+      !isSilentU(letters, index) &&
       !startsHiatus(letters[index - 1], letters[index])
     ) {
       index += 1
