@@ -59,7 +59,7 @@ self.addEventListener("fetch", (event) => {
   const isStaticAsset = url.pathname.startsWith("/_next/static/") ||
     url.pathname === "/manifest.webmanifest" ||
     url.pathname === "/pwa-icon.svg" ||
-    url.pathname === "/pdf.worker.min.mjs";
+    url.pathname === "/pdf.worker.min.mjs" || url.pathname.startsWith("/onnxruntime/");
 
   if (isStaticAsset) {
     event.respondWith((async () => {
