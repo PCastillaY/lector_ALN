@@ -10,8 +10,12 @@ interface KokoroAudio {
 }
 
 interface KokoroInstance {
-  list_voices(): string[]
-  generate(text: string, options: { voice: VoiceId; speed: number }): Promise<KokoroAudio>
+  tokenizer(text: string, options: { truncation: boolean }): { input_ids: { dims: number[] } }
+  model(inputs: {
+    input_ids: unknown
+    style: unknown
+    speed: unknown
+  }): Promise<{ waveform: { data: Float32Array } }>
 }
 
 interface KokoroModule {
@@ -37,6 +41,78 @@ const VOICES: Array<{ id: VoiceId; name: string; gender: string; note: string }>
 
 const DEFAULT_TEXT =
   "Buenos días. Esta es una prueba de lectura en español latinoamericano. En el año 2026, el documento contiene 125 páginas, tres capítulos y varias cifras: 12,5 %, S/ 1.250,50 y 7:30 p. m. ¿La pronunciación resulta clara y natural?"
+
+const VOICE_ASSET_BASE =
+  "https://huggingface.co/skillsafe-ai/kokoro-82m/resolve/main/voices"
+const VOICE_CACHE_NAME = "lector-aln-kokoro-spanish-voices-v1"
+const STYLE_DIM = 256
+const SAMPLE_RATE = 24000
+const VOICE_STYLE_ROWS = 510
+const voiceDataMemoryCache = new Map<VoiceId, Float32Array>()
+
+async function loadVoiceData(voice: VoiceId): Promise<Float32Array> {
+  const inMemory = voiceDataMemoryCache.get(voice)
+  if (inMemory) return inMemory
+
+  const url = `${VOICE_ASSET_BASE}/${voice}.bin`
+  const cache = await caches.open(VOICE_CACHE_NAME)
+  const cached = await cache.match(url)
+  if (cached) {
+    const data = new Float32Array(await cached.arrayBuffer())
+    voiceDataMemoryCache.set(voice, data)
+    return data
+  }
+
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`No se pudo descargar el perfil de voz ${voice} (HTTP ${response.status}).`)
+  }
+
+  const buffer = await response.arrayBuffer()
+  if (buffer.byteLength !== VOICE_STYLE_ROWS * STYLE_DIM * Float32Array.BYTES_PER_ELEMENT) {
+    throw new Error(`El archivo de voz ${voice} tiene un tamaño inesperado; no se almacenará en caché.`)
+  }
+
+  await cache.put(url, new Response(buffer.slice(0), {
+    headers: { "Content-Type": "application/octet-stream" },
+  }))
+  const data = new Float32Array(buffer)
+  voiceDataMemoryCache.set(voice, data)
+  return data
+}
+
+function audioToWavBlob(samples: Float32Array): Blob {
+  const bytesPerSample = 2
+  const dataSize = samples.length * bytesPerSample
+  const buffer = new ArrayBuffer(44 + dataSize)
+  const view = new DataView(buffer)
+  const writeText = (offset: number, value: string) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index))
+    }
+  }
+
+  writeText(0, "RIFF")
+  view.setUint32(4, 36 + dataSize, true)
+  writeText(8, "WAVE")
+  writeText(12, "fmt ")
+  view.setUint32(16, 16, true)
+  view.setUint16(20, 1, true)
+  view.setUint16(22, 1, true)
+  view.setUint32(24, SAMPLE_RATE, true)
+  view.setUint32(28, SAMPLE_RATE * bytesPerSample, true)
+  view.setUint16(32, bytesPerSample, true)
+  view.setUint16(34, 16, true)
+  writeText(36, "data")
+  view.setUint32(40, dataSize, true)
+
+  for (let index = 0; index < samples.length; index += 1) {
+    const sample = Math.max(-1, Math.min(1, samples[index]))
+    view.setInt16(44 + index * bytesPerSample, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true)
+  }
+
+  return new Blob([buffer], { type: "audio/wav" })
+}
 
 export function TtsPocWorkbench() {
   const engineRef = useRef<KokoroInstance | null>(null)
@@ -130,11 +206,29 @@ export function TtsPocWorkbench() {
     audioRef.current?.pause()
 
     try {
-      const result = await engineRef.current.generate(text.trim(), {
-        voice: voiceId,
-        speed,
+      const [{ phonemize }, { Tensor }] = await Promise.all([
+        import("phonemizer"),
+        import("@huggingface/transformers"),
+      ])
+      const phonemeParts = await phonemize(text.trim(), "es")
+      const phonemeText = phonemeParts.join(" ").trim()
+      if (!phonemeText) throw new Error("El fonemizador no produjo fonemas para el texto indicado.")
+
+      const { input_ids } = engineRef.current.tokenizer(phonemeText, { truncation: true })
+      const tokenCount = input_ids.dims.at(-1) ?? 0
+      if (tokenCount < 2) throw new Error("El texto no produjo suficientes tokens para sintetizar audio.")
+
+      const voiceData = await loadVoiceData(voiceId)
+      const styleIndex = Math.min(Math.max(tokenCount - 2, 0), VOICE_STYLE_ROWS - 1) * STYLE_DIM
+      const styleData = voiceData.slice(styleIndex, styleIndex + STYLE_DIM)
+      if (styleData.length !== STYLE_DIM) throw new Error(`El perfil de voz ${voiceId} no contiene el vector de estilo esperado.`)
+
+      const output = await engineRef.current.model({
+        input_ids,
+        style: new Tensor("float32", styleData, [1, STYLE_DIM]),
+        speed: new Tensor("float32", [speed], [1]),
       })
-      const blob = result.toBlob()
+      const blob = audioToWavBlob(output.waveform.data)
       const nextUrl = URL.createObjectURL(blob)
 
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
@@ -225,7 +319,7 @@ export function TtsPocWorkbench() {
 
         <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="font-semibold">2. Seleccionar y escuchar una voz</h2>
-          <p className="mt-1 text-sm text-slate-500">Las voces comparten el mismo modelo; el runtime puede descargar el embedding de cada voz al utilizarla por primera vez.</p>
+          <p className="mt-1 text-sm text-slate-500">Las voces españolas usan fonemización eSpeak NG (es) y perfiles de estilo descargados una vez y guardados en una caché local independiente.</p>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {VOICES.map((voice) => (
@@ -262,8 +356,8 @@ export function TtsPocWorkbench() {
         <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-600 shadow-sm sm:p-6">
           <h2 className="font-semibold text-slate-900">Notas de esta prueba</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>La descarga inicial requiere Internet; la inferencia de texto se ejecuta en el navegador.</li>
-            <li>La PWA cachea el app shell y los recursos same-origin utilizados. Transformers.js mantiene por separado los pesos y binarios WASM en Cache Storage.</li>
+            <li>La descarga inicial requiere Internet; la fonemización y la inferencia se ejecutan en el navegador.</li>
+            <li>La PWA cachea el app shell y los recursos same-origin utilizados. Transformers.js mantiene por separado los pesos y binarios WASM en Cache Storage; los tres perfiles españoles se guardan en lector-aln-kokoro-spanish-voices-v1.</li>
             <li>La persistencia del almacenamiento se solicita al navegador, pero este puede denegarla o eliminar datos; la prueba tras reiniciar Chrome sigue siendo obligatoria.</li>
             <li>La primera visita, la instalación de la PWA y la descarga inicial del modelo requieren conexión. La prueba offline debe realizarse después de completar la carga del laboratorio y del modelo.</li>
             <li>El laboratorio no accede a los documentos ni modifica el progreso de lectura.</li>
