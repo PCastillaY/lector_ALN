@@ -9,8 +9,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "node scripts/run-tests.cjs",
-    "predev": "node scripts/copy-pdf-worker.cjs",
-    "prebuild": "node scripts/copy-pdf-worker.cjs"
+    "predev": "node scripts/copy-pdf-worker.cjs && node scripts/copy-onnxruntime-assets.cjs",
+    "prebuild": "node scripts/copy-pdf-worker.cjs && node scripts/copy-onnxruntime-assets.cjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
