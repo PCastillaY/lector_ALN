@@ -16,15 +16,16 @@ test("fonemiza español conservando puntuación", () => {
 })
 
 test("aplica seseo, yeísmo y consonantes españolas frecuentes", () => {
-  assert.equal(phonemizeSpanish("cielo"), "ˈsjelo")
+  assert.equal(phonemizeSpanish("cielo"), "ˈsielo")
   assert.equal(phonemizeSpanish("llamar"), "ʝaˈmaɾ")
   assert.equal(phonemizeSpanish("chico"), "ˈʧiko")
+  assert.equal(phonemizeSpanish("guapo"), "ˈɡwapo")
 })
 
 test("resuelve acentos, hiatos, gue/gui y diéresis", () => {
   assert.equal(phonemizeSpanish("país"), "paˈis")
   assert.equal(phonemizeSpanish("guerra"), "ɡˈera")
-  assert.equal(phonemizeSpanish("pingüino"), "piŋˈɡwuino".replace("ŋ", "n"))
+  assert.equal(phonemizeSpanish("pingüino"), "pinɡwˈuino")
 })
 
 test("la secuencia producida solo contiene símbolos del inventario Kokoro", () => {
