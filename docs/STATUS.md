@@ -399,3 +399,15 @@ Estas propuestas no están aprobadas ni deben implementarse automáticamente. Re
 ### Corrección G2P posterior a la primera ejecución — 2026-11-12
 
 La primera ejecución en Codespaces encontró dos fallos de regresión en la posición del acento: el marcador se insertaba delante del núcleo vocálico en lugar de delante del ataque silábico. Se ajustó el cálculo del inicio de sílaba y el tratamiento de `gu`/`gü`; las expectativas de las pruebas ahora reflejan el acento sobre el ataque correspondiente. **Pendiente:** volver a ejecutar `pnpm test`, `pnpm typecheck` y `pnpm build` en Codespaces. No se considera validado hasta obtener esos resultados.
+
+## Corrección G2P tras la evaluación auditiva — 2026-11-13
+
+La muestra WAV de 14,65 s y su texto de prueba permitieron identificar defectos reproducibles en la lógica de acentuación del fonemizador lib/speech/phonemization/kokoro-spanish.ts:
+
+- **Acento secundario artificial:** secondaryStressStarts() insertaba ˌ alternando núcleos vocálicos por índice, sin análisis prosódico. Esto añadía prominencia innecesaria en palabras como «páginas», «cantidades» y «pronunciación». Se eliminó esa heurística; el G2P ya no genera acentos secundarios automáticamente.
+- **Ataques cl y cr:** syllableOnsetStart() comparaba grupos ortográficos con una lista que contenía sus equivalentes fonéticos (kl, kr), pero no las grafías cl y cr. Esto podía colocar el acento después de la primera consonante, como en kˈlaɾa y eskˈɾitas. Se añadieron ambos grupos ortográficos a los ataques legales, antes de la conversión de grafemas.
+- **Palabras funcionales:** «es» y «con» no estaban en la lista de palabras átonas; se incorporaron para evitar acentos léxicos artificiales en el contexto de la muestra.
+- **Regresión:** se añadieron pruebas para «clara», «escritas», «páginas», «cantidades», «pronunciación», «con» y la secuencia del ejemplo completo. También se comprueba que la salida no contenga marcas ˌ y que «esta es una prueba» mantenga átonas las palabras funcionales correspondientes.
+
+**Estado de esta corrección: implementada en la rama, pendiente de validación.** Aún no se han ejecutado pnpm test, pnpm typecheck ni pnpm build sobre estos cambios, ni se ha generado una nueva muestra auditiva. No se declara resuelta la naturalidad de la voz: quedan por comprobar la salida real del tokenizador, los diptongos/hiatos, la prosodia entre palabras y la calidad acústica de las tres voces. La corrección no integra Kokoro en el lector ni modifica la cola TTS o ReadingProgress.
+
