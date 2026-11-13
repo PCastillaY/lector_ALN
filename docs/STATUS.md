@@ -18,7 +18,7 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - [x] Persistencia local de posición por documento, restauración y migración IndexedDB.
 - [x] Validación manual de persistencia en TXT, PDF y EPUB, incluyendo recarga, varios documentos y documentos previos a la migración.
 - [x] PR #4 (PDF), PR #5 (EPUB), PR #6 (segmentación) y PR #7 (persistencia) integrados en `main`.
-- [ ] Prueba de concepto TTS: laboratorio aislado en `/lab/tts`; base PWA y fonemizador español TypeScript añadidos en la rama, pendientes de instalación, pruebas, build, muestras auditivas y validación offline real en Chrome.
+- [ ] Prueba de concepto TTS: laboratorio aislado en `/lab/tts`; base PWA y fonemizador español TypeScript añadidos en la rama. Se generó y escuchó una primera muestra real, pero la calidad de pronunciación/prosodia no es aceptable; el G2P actual queda en revisión y no debe considerarse validado. Pendientes corrección fonética fundamentada, nuevas muestras, pruebas técnicas y validación offline real en Chrome.
 - [ ] TTS no está integrado en el lector; no modificar aún la cola de lectura ni `ReadingProgress`.
 
 ## Decisiones de alcance vigentes
@@ -50,13 +50,59 @@ La ruta **importar → extraer → segmentar → leer → persistir posición** 
 - [ ] La PWA registra el Service Worker y la ruta `/lab/tts` abre tras recargar sin conexión.\n- [ ] Chrome descarga y carga el modelo sin errores.
 - [x] Sustituir eSpeak NG/`phonemizer` por un módulo de fonemización española TypeScript local, con validación del inventario de símbolos.
 - [ ] Ejecutar las pruebas automatizadas del fonemizador y confirmar que el tokenizador no descarta ni trunca símbolos en navegador.
-- [ ] Preview funcional para Dora, Alex y Santa mediante la ruta experimental.
+- [ ] Preview funcional y auditivamente aceptable para Dora, Alex y Santa mediante la ruta experimental. La generación de audio ya se ejecutó, pero la primera muestra fue evaluada como no natural; no se considera superado este criterio.
 - [ ] Medir descarga, inicialización y latencia de generación.
 - [ ] Comparar WASM Q8 y WebGPU FP32, si está disponible.
 - [ ] Recargar la página y comprobar reutilización de recursos.
 - [ ] Desconectar Internet y comprobar síntesis offline.
 - [ ] Instalar/abrir la PWA, cerrar y reabrir Chrome sin red y comprobar persistencia del app shell, runtime y modelo.
 - [ ] Revisar licencias del runtime, modelo y recursos de voz antes de distribuirlos; la referencia de reglas G2P conserva Apache-2.0 y NOTICE en `licenses/kokoro-micro/`.
+
+
+## Evaluación auditiva inicial de Kokoro — 2026-11-13
+
+### Muestra recibida
+
+- Archivo WAV aportado por el usuario y escuchado directamente.
+- Duración: 14,65 s.
+- Formato: mono, 24 kHz.
+- Texto de prueba correspondiente al texto común del laboratorio: saludo y lectura descriptiva en español, con una pregunta final.
+- La muestra demuestra que la ruta de inferencia puede producir audio en el entorno probado. Esto no equivale a validar calidad de voz ni funcionamiento offline.
+
+### Resultado auditivo
+
+**Resultado: no aceptable todavía para narración de lectura prolongada.**
+
+En la escucha se aprecia:
+
+- La voz resulta comprensible en términos generales, pero la prosodia global no suena natural.
+- El acento léxico de algunas palabras resulta poco convincente o parece desplazado.
+- El ritmo es entrecortado y la continuidad entre palabras/frases es irregular.
+- Se perciben pausas que no parecen corresponder siempre a la puntuación ni a la estructura sintáctica.
+- La sensación de fluidez buscada no se alcanza.
+
+Esta es una evaluación perceptiva de una única muestra, no una medición acústica ni una comparación ciega entre voces. No permite atribuir cada defecto a una regla concreta ni confirmar qué parte corresponde al G2P, al modelo, a los embeddings o al preprocesamiento.
+
+### Interpretación técnica y decisión
+
+- Cambiar WebAssembly por WebGPU no corrige por sí mismo la fonemización ni la prosodia. Ambos backends ejecutan el mismo flujo lingüístico y modelo; sus diferencias principales son de ejecución/rendimiento y precisión numérica.
+- El fonemizador TypeScript actual es una aproximación inicial y sus pruebas unitarias solo verifican salidas de texto para un conjunto reducido de ejemplos. Superar esas pruebas no demuestra correspondencia con la convención fonética usada para entrenar las voces ni naturalidad acústica.
+- La muestra auditiva invalida por ahora el criterio de aceptación de calidad del preview. La PoC queda **funcional a nivel de generación, pero no validada acústicamente**.
+- No integrar Kokoro en el lector ni conectar la síntesis a la cola de segmentos o a `ReadingProgress` hasta resolver la calidad.
+
+### Próximas acciones
+
+1. Auditar la secuencia fonética exacta generada para el texto de la muestra y relacionarla palabra por palabra con los defectos percibidos.
+2. Comparar el G2P actual con una referencia fonética compatible con el entrenamiento de las voces españolas de Kokoro; no continuar añadiendo excepciones aisladas sin corpus.
+3. Revisar por separado acentuación léxica, silabificación, alófonos, tratamiento de palabras funcionales, puntuación y pausas.
+4. Crear un corpus de regresión con palabras y frases controladas (hiatos, diptongos, grupos consonánticos, palabras agudas/llanas/esdrújulas, interrogativas, diálogos y párrafos).
+5. Generar muestras idénticas con las tres voces y escuchar cada iteración. Registrar qué versión del G2P, texto, voz y backend produjo cada archivo.
+6. Solo después de estabilizar la pronunciación, evaluar pausas, velocidad, continuidad y calidad de lectura prolongada.
+7. Mantener WebAssembly/WebGPU como variables de rendimiento; no tratarlos como soluciones de calidad lingüística.
+
+### Criterio para reabrir la aceptación
+
+La PoC solo podrá considerarse acústicamente aceptable cuando las voces produzcan lecturas inteligibles y naturales en el corpus de referencia, con acentuación correcta, pausas coherentes y continuidad suficientemente estable para lectura prolongada. La validación debe incluir escucha humana; los tests de fonemas por sí solos no bastan.
 
 ## Pendientes transversales
 
