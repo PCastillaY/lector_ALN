@@ -20,13 +20,12 @@ const KOKORO_SPANISH_SYMBOLS = new Set(
 const UNSTRESSED_WORDS = new Set([
   "el", "la", "los", "las", "un", "una", "unos", "unas",
   "a", "al", "del", "de", "en", "y", "o", "u", "que", "se", "le", "les",
-  "lo", "me", "te", "nos", "mi", "mis", "tu", "tus", "su", "sus",
+  "lo", "me", "te", "nos", "mi", "mis", "tu", "tus", "su", "sus", "es", "con",
 ])
 
 const STRONG_VOWELS = new Set(["a", "e", "o", "á", "é", "ó"])
 const WEAK_VOWELS = new Set(["i", "u", "ü", "í", "ú"])
 const STRESS_MARK = "ˈ"
-const SECONDARY_STRESS_MARK = "ˌ"
 
 function stripAccent(letter: string): string {
   const map: Record<string, string> = {
@@ -126,30 +125,15 @@ function syllableOnsetStart(
   const last = consonantIndices[consonantIndices.length - 1]
   const cluster = letters[first] + letters[last]
   const legalOnsets = new Set([
-    "pr", "br", "pl", "bl", "fr", "fl", "tr", "dr", "kr", "kl", "gr", "gl",
+    "pr", "br", "pl", "bl", "fr", "fl", "tr", "dr", "cr", "cl", "kr", "kl", "gr", "gl",
   ])
 
+  // Se comparan grafías ortográficas: además de los grupos ya normalizados
+  // fonéticamente, se incluyen "cl" y "cr" antes de convertir c en k/s.
   // En grupos de tres consonantes, la primera suele cerrar la sílaba
   // anterior y las dos últimas forman el ataque (ins-tan-te).
   if (legalOnsets.has(cluster)) return first
   return last
-}
-
-function secondaryStressStarts(
-  letters: string[],
-  nuclei: Array<{ start: number; end: number }>,
-  primaryStart: number | undefined,
-): Set<number> {
-  const result = new Set<number>()
-  if (primaryStart === undefined) return result
-
-  const primaryIndex = nuclei.findIndex((nucleus) => nucleus.start === primaryStart)
-  nuclei.forEach((nucleus, index) => {
-    if (index % 2 === 0 && index !== primaryIndex && Math.abs(index - primaryIndex) !== 1) {
-      result.add(syllableOnsetStart(letters, nuclei, nucleus.start))
-    }
-  })
-  return result
 }
 
 function phonemizeWord(source: string): string {
@@ -164,14 +148,12 @@ function phonemizeWord(source: string): string {
   const stressStart = stressNucleusStart === undefined
     ? undefined
     : syllableOnsetStart(letters, nuclei, stressNucleusStart)
-  const secondary = secondaryStressStarts(letters, nuclei, stressNucleusStart)
 
   let output = ""
   let index = 0
 
   while (index < letters.length) {
     if (index === stressStart) output += STRESS_MARK
-    else if (secondary.has(index)) output += SECONDARY_STRESS_MARK
 
     const current = letters[index]
     const next = letters[index + 1]
